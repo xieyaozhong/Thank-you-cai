@@ -60,15 +60,15 @@
             <div class="hero__facts" aria-label="本週菜攤資訊">
               <span><strong id="week-label">本週菜單</strong>每週更新</span>
               <span><strong>滿 NT$500</strong>試算免運</span>
-              <span><strong>8 種蔬果</strong>示範資料</span>
+              <span><strong>16 種蔬果</strong>示範資料</span>
             </div>
           </div>
 
           <div class="hero__crate" aria-label="本週蔬果展示">
-            <span class="crate-emoji crate-emoji--large" aria-hidden="true">🥬</span>
-            <span class="crate-emoji" aria-hidden="true">🥕</span>
-            <span class="crate-emoji" aria-hidden="true">🍍</span>
-            <span class="crate-emoji" aria-hidden="true">🍅</span>
+            <span class="crate-sprite crate-sprite--large" data-sprite="cabbage" data-label="高麗菜"></span>
+            <span class="crate-sprite" data-sprite="carrot" data-label="紅蘿蔔"></span>
+            <span class="crate-sprite" data-sprite="pineapple" data-label="金鑽鳳梨"></span>
+            <span class="crate-sprite" data-sprite="strawberry" data-label="草莓"></span>
             <div><strong>今日好菜</strong><small>新鮮、惜食都清楚標示</small></div>
           </div>
         </div>
@@ -88,7 +88,7 @@
 
         <section id="weekly-market" class="market-section section-wrap" aria-labelledby="market-title">
           <div class="section-heading">
-            <div><span class="eyebrow">THIS WEEK'S HARVEST</span><h2 id="market-title">本週上架</h2><p id="product-count">8 種蔬果等你挑選</p></div>
+            <div><span class="eyebrow">THIS WEEK'S HARVEST</span><h2 id="market-title">本週上架</h2><p id="product-count">16 種蔬果等你挑選</p></div>
             <label class="search-box">
               <span class="sr-only">搜尋蔬果</span>
               <input id="search-input" type="search" placeholder="搜尋菜名、卡名或產地" autocomplete="off" />
@@ -141,7 +141,7 @@
 
         <div class="gacha-layout">
           <div class="gacha-machine">
-            <div id="gacha-screen" class="gacha-machine__screen" aria-live="polite"><span aria-hidden="true">🍍</span><strong>準備好了嗎？</strong><small>按下旋鈕抽菜卡</small></div>
+            <div id="gacha-screen" class="gacha-machine__screen" aria-live="polite"><span data-sprite="pineapple" data-label="金鑽鳳梨"></span><strong>準備好了嗎？</strong><small>按下旋鈕抽菜卡</small></div>
             <button id="draw-button" type="button" class="gacha-knob" aria-label="花 50 點抽一張菜卡"><span aria-hidden="true">↻</span></button>
             <button id="draw-action" type="button" class="primary-button">花 50 點抽卡</button>
           </div>

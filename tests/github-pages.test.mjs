@@ -14,6 +14,7 @@ test("ships a self-contained GitHub Pages vegetable stall", async () => {
   assert.match(html, /<html[^>]*lang="zh-Hant"/i);
   assert.match(html, /GitHub 展示版/);
   assert.match(html, /這週吃什麼？/);
+  assert.match(html, /16 種蔬果/);
   assert.match(html, /\.\/styles\.css/);
   assert.match(html, /\.\/app\.js/);
   assert.match(html, /xieyaozhong\.github\.io\/Thank-you-cai/);
@@ -21,12 +22,14 @@ test("ships a self-contained GitHub Pages vegetable stall", async () => {
   assert.doesNotMatch(html, /<link[^>]+href="(?!\.\/)/i);
 
   assert.match(css, /--green:\s*#24583a/);
+  assert.match(css, /\.pixel-sprite/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(script, /localStorage/);
   assert.match(script, /thank-you-cai-github-pages-v1/);
   assert.match(script, /sanitizeStoredOrder/);
-  assert.match(script, /escapeHtml\(line\.emoji\)/);
-  assert.equal((script.match(/\{ id: "[^"]+"/g) ?? []).length, 8);
+  assert.match(script, /renderPixelSprite\(line\.sprite/);
+  assert.equal((script.match(/\{ id: "[^"]+"/g) ?? []).length, 16);
+  assert.doesNotMatch(script, /product\.emoji|emoji:\s*"/);
   assert.doesNotMatch(script, /fetch\s*\(|\/api\//);
 
   const parsedManifest = JSON.parse(manifest);

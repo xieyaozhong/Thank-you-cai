@@ -77,6 +77,38 @@ export const SPRITES = {
     pixels: ["....22....", "...2222...", "...2112...", "..133331..", ".13333331.", ".13343331.", ".13333331.", "..133331..", "...1111...", ".........."],
     palette: { "1": "#8f3028", "2": "#397247", "3": "#d84d3e", "4": "#ff9d68" },
   },
+  eggplant: {
+    pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "..133331..", ".13333331.", ".13343331.", "..133331..", "...1111...", ".........."],
+    palette: { "1": "#3b214c", "2": "#397247", "3": "#70408f", "4": "#a56cc1" },
+  },
+  corn: {
+    pixels: ["...22.22..", "..222222..", "...2112...", "..133331..", ".13434331.", ".13343331.", ".13434331.", "..133331..", "...1111...", "..22..22.."],
+    palette: { "1": "#805b2c", "2": "#397247", "3": "#f1bd3d", "4": "#ffe26a" },
+  },
+  pumpkin: {
+    pixels: ["....22....", "...2112...", "..111111..", ".13344331.", "1334444331", "1334344331", "1334444331", ".13344331.", "..111111..", ".........."],
+    palette: { "1": "#7a3e2b", "2": "#397247", "3": "#cf6328", "4": "#f29a3a" },
+  },
+  onion: {
+    pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "..134431..", ".13444431.", ".13444431.", "..134431..", "...1111...", "....11...."],
+    palette: { "1": "#7a5131", "2": "#78a94b", "3": "#c78d55", "4": "#f2d2a1" },
+  },
+  pepper: {
+    pixels: ["....22....", "...2222...", "...2112...", "..133331..", ".13333331.", ".13343331.", ".13333331.", "..133331..", "...1111...", ".........."],
+    palette: { "1": "#294529", "2": "#397247", "3": "#5e9b42", "4": "#9ccc5a" },
+  },
+  strawberry: {
+    pixels: ["...2222...", "..222222..", "...2112...", "..133331..", ".13434331.", ".13343331.", ".13434331.", "..133331..", "...1111...", ".........."],
+    palette: { "1": "#8f3028", "2": "#397247", "3": "#d84d3e", "4": "#ffd76b" },
+  },
+  dragonfruit: {
+    pixels: ["...22.22..", "..222222..", "...2112...", "..133331..", ".13444331.", "1344434331", "1344444331", ".13343331.", "..111111..", "...2..2..."],
+    palette: { "1": "#8d315f", "2": "#78a94b", "3": "#e85d98", "4": "#fff0dc" },
+  },
+  orange: {
+    pixels: ["....22....", "...2112...", "..111111..", ".13333331.", "1333443331", "1333443331", ".13333331.", "..133331..", "...1111...", ".........."],
+    palette: { "1": "#80502b", "2": "#397247", "3": "#e97e2e", "4": "#ffc75a" },
+  },
 } as const;
 
 export type SpriteKey = keyof typeof SPRITES;
@@ -164,6 +196,14 @@ export const INITIAL_PRODUCTS: Product[] = [
   { id: "banana-c", name: "香蕉", cardName: "甜甜惜食香蕉", category: "fruit", grade: "C", price: 45, unit: "把", origin: "屏東", stock: 8, maxPerOrder: 2, conditionNote: "已熟透且有糖斑，建議今天吃或打果汁。", spriteKey: "banana" },
   { id: "pineapple-b", name: "金鑽鳳梨", cardName: "迷你金鑽鳳梨", category: "fruit", grade: "B", price: 110, unit: "顆", origin: "嘉義", stock: 9, maxPerOrder: 2, conditionNote: "果型略小，香氣與果肉狀況正常。", spriteKey: "pineapple" },
   { id: "tomato-a", name: "玉女小番茄", cardName: "紅寶石小番茄", category: "fruit", grade: "A", price: 95, unit: "盒", origin: "嘉義", stock: 16, maxPerOrder: 4, conditionNote: "果色自然，少量大小差異，酸甜清脆。", spriteKey: "tomato" },
+  { id: "eggplant-a", name: "茄子", cardName: "紫晶茄子", category: "vegetable", grade: "A", price: 58, unit: "袋（3 條）", origin: "屏東", stock: 15, maxPerOrder: 4, conditionNote: "果皮亮紫，少量自然彎曲。", spriteKey: "eggplant" },
+  { id: "corn-s", name: "水果玉米", cardName: "金陽水果玉米", category: "vegetable", grade: "S", price: 75, unit: "支", origin: "嘉義", stock: 12, maxPerOrder: 4, conditionNote: "清晨採收，甜脆多汁，可直接生食。", spriteKey: "corn" },
+  { id: "pumpkin-b", name: "栗子南瓜", cardName: "圓滾栗子南瓜", category: "vegetable", grade: "B", price: 120, unit: "顆", origin: "花蓮", stock: 7, maxPerOrder: 2, conditionNote: "大小略有差異，果肉粉糯香甜。", spriteKey: "pumpkin" },
+  { id: "onion-c", name: "洋蔥", cardName: "惜食甜洋蔥", category: "vegetable", grade: "C", price: 39, unit: "袋（2 顆）", origin: "屏東", stock: 11, maxPerOrder: 3, conditionNote: "外皮略乾或有壓痕，剝除後可安心料理。", spriteKey: "onion" },
+  { id: "pepper-a", name: "青椒", cardName: "翡翠青椒", category: "vegetable", grade: "A", price: 60, unit: "袋（3 顆）", origin: "南投", stock: 13, maxPerOrder: 4, conditionNote: "色澤亮綠，果型略有自然差異。", spriteKey: "pepper" },
+  { id: "strawberry-s", name: "草莓", cardName: "晨露紅寶石草莓", category: "fruit", grade: "S", price: 180, unit: "盒", origin: "苗栗", stock: 8, maxPerOrder: 2, conditionNote: "果色鮮紅，香氣飽滿，當日冷藏出貨。", spriteKey: "strawberry" },
+  { id: "dragonfruit-b", name: "紅龍果", cardName: "星點紅龍果", category: "fruit", grade: "B", price: 95, unit: "顆", origin: "台南", stock: 10, maxPerOrder: 3, conditionNote: "果型略小，果肉清甜、籽粒分明。", spriteKey: "dragonfruit" },
+  { id: "orange-a", name: "柳丁", cardName: "日光香甜柳丁", category: "fruit", grade: "A", price: 89, unit: "袋（4 顆）", origin: "台南", stock: 14, maxPerOrder: 3, conditionNote: "果皮有少量自然斑點，汁多酸甜。", spriteKey: "orange" },
 ];
 
 export const GACHA_COST = 50;

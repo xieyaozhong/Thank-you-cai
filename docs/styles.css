@@ -146,8 +146,16 @@ h3 { line-height: 1.25; }
 }
 .hero__crate::before { top: 17px; }
 .hero__crate::after { bottom: 11px; }
-.crate-emoji { position: relative; z-index: 1; display: block; font-size: clamp(3rem, 7vw, 5.4rem); filter: drop-shadow(4px 6px 0 rgba(24, 52, 39, .16)); }
-.crate-emoji--large { grid-row: span 2; align-self: center; font-size: clamp(4rem, 9vw, 7rem); }
+.pixel-sprite {
+  display: grid; grid-template-columns: repeat(10, 9px); grid-auto-rows: 9px;
+  width: max-content; image-rendering: pixelated; filter: drop-shadow(4px 5px 0 rgba(24, 52, 39, .15));
+}
+.pixel-sprite--small { grid-template-columns: repeat(10, 6px); grid-auto-rows: 6px; filter: drop-shadow(2px 3px 0 rgba(24, 52, 39, .12)); }
+.pixel-sprite__cell { width: 100%; height: 100%; }
+.pixel-sprite-fallback { display: grid; place-items: center; min-width: 60px; min-height: 60px; color: var(--muted); font: 900 2rem/1 ui-monospace, monospace; }
+.crate-sprite { position: relative; z-index: 1; display: grid; place-items: center; min-height: 90px; }
+.crate-sprite--large { grid-row: span 2; align-self: center; }
+.crate-sprite--large .pixel-sprite { transform: scale(1.16); }
 .hero__crate > div { position: relative; z-index: 1; grid-column: 1 / -1; display: grid; padding: 7px 10px 18px; }
 .hero__crate small { color: var(--muted); }
 
@@ -214,7 +222,7 @@ h3 { line-height: 1.25; }
   position: relative; display: grid; place-items: center; min-height: 158px; margin: 11px 13px;
   border-radius: 13px; background: color-mix(in srgb, var(--card-grade) 18%, #fff7dd);
 }
-.product-emoji { font-size: 5.4rem; filter: drop-shadow(4px 5px 0 rgba(24, 52, 39, .14)); }
+.product-card__art .pixel-sprite { transform: scale(1.08); }
 .grade-corner { position: absolute; right: 10px; bottom: 5px; color: color-mix(in srgb, var(--card-grade) 75%, #183427); font-size: 2rem; font-weight: 950; opacity: .38; }
 .product-card__body { padding: 0 15px 16px; }
 .origin { color: var(--green-2); font-size: .69rem; font-weight: 900; }
@@ -238,7 +246,6 @@ h3 { line-height: 1.25; }
 .cart-empty > span { color: var(--green); font-size: 2rem; }
 .cart-lines { display: grid; gap: 9px; margin-block: 16px; }
 .cart-line { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center; padding-bottom: 9px; border-bottom: 1px dashed var(--line); }
-.cart-line__emoji { font-size: 1.8rem; }
 .cart-line > div { display: grid; }
 .cart-line span { color: var(--muted); font-size: .7rem; }
 .cart-line b { font-size: .82rem; }
@@ -263,7 +270,7 @@ h3 { line-height: 1.25; }
 .gacha-layout { display: grid; grid-template-columns: minmax(300px, .75fr) minmax(0, 1.25fr); gap: 44px; align-items: start; }
 .gacha-machine { display: grid; justify-items: center; padding: 32px 28px 28px; border: 3px solid var(--ink); border-radius: 48px 48px 20px 20px; background: var(--orange); box-shadow: 8px 8px 0 var(--ink); }
 .gacha-machine__screen { display: grid; place-items: center; width: 100%; min-height: 210px; padding: 20px; border: 4px solid var(--ink); border-radius: 24px; background: #fff5d2; text-align: center; }
-.gacha-machine__screen > span { font-size: 5rem; }
+.gacha-machine__screen .pixel-sprite { margin: 15px; transform: scale(1.18); }
 .gacha-machine__screen strong { font-size: 1.25rem; }
 .gacha-machine__screen small { color: var(--muted); }
 .gacha-knob { display: grid; place-items: center; width: 82px; height: 82px; margin: 22px 0 12px; border: 4px solid var(--ink); border-radius: 50%; background: var(--yellow); box-shadow: 5px 5px 0 var(--ink); cursor: pointer; font-size: 2rem; font-weight: 950; }
@@ -273,7 +280,7 @@ h3 { line-height: 1.25; }
 .collection-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; margin-top: 18px; }
 .collection-card { display: grid; place-items: center; min-height: 140px; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; background: #f8f5eb; text-align: center; }
 .collection-card.is-locked { filter: grayscale(1); opacity: .42; }
-.collection-card > span { font-size: 2.4rem; }
+.collection-card .pixel-sprite { margin-bottom: 5px; }
 .collection-card strong { font-size: .78rem; }
 .collection-card small { color: var(--muted); font-size: .68rem; }
 
@@ -285,6 +292,7 @@ h3 { line-height: 1.25; }
 .status { padding: 5px 9px; border-radius: 999px; color: var(--green); background: #dfefd5; font-size: .7rem; font-weight: 900; }
 .order-lines { display: grid; gap: 7px; margin: 14px 0; }
 .order-lines > div { display: flex; justify-content: space-between; gap: 16px; }
+.order-line-product, .checkout-product { display: inline-flex; align-items: center; gap: 9px; }
 .order-meta { padding: 11px; border-radius: 10px; color: var(--muted); background: #f7f3e8; font-size: .8rem; }
 .order-card__total { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; padding-top: 12px; border-top: 2px solid var(--ink); }
 .order-card__total strong { font-size: 1.25rem; }
@@ -368,9 +376,17 @@ h3 { line-height: 1.25; }
   .brand small { display: none; }
   .hero__facts { grid-template-columns: 1fr; }
   .hero__facts > span { min-width: 0; }
-  .hero__crate { grid-template-columns: repeat(3, 1fr); }
-  .crate-emoji { font-size: 2.9rem; }
-  .crate-emoji--large { font-size: 4rem; }
+  .hero__crate { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline: 12px; }
+  .crate-sprite { min-width: 0; min-height: 70px; }
+  .crate-sprite .pixel-sprite { grid-template-columns: repeat(10, 7px); grid-auto-rows: 7px; transform: none; }
+  .crate-sprite--large .pixel-sprite { transform: scale(1.08); }
+  .order-lines > div, .checkout-summary > span { align-items: center; gap: 8px; }
+  .order-line-product, .checkout-product { min-width: 0; }
+  .order-line-product .pixel-sprite--small, .checkout-product .pixel-sprite--small {
+    flex: 0 0 auto; grid-template-columns: repeat(10, 5px); grid-auto-rows: 5px;
+  }
+  .order-line-product > span:last-child, .checkout-product > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+  .order-lines > div > strong, .checkout-summary > span > b { flex: 0 0 auto; }
   .grade-grid, .product-grid { grid-template-columns: 1fr; }
   .product-card__body > p { min-height: 0; }
   .gacha-machine { padding-inline: 18px; }

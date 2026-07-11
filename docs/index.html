@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#183427" />
+    <meta name="description" content="謝謝你，菜！GitHub 展示版：瀏覽每週蔬果、試玩菜籃與收藏抽卡。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:title" content="謝謝你，菜！｜自家菜攤週報" />
+    <meta property="og:description" content="每週新鮮蔬果、真實菜況與可愛菜籃的 GitHub Pages 展示版。" />
+    <meta property="og:url" content="https://xieyaozhong.github.io/Thank-you-cai/" />
+    <meta property="og:image" content="https://xieyaozhong.github.io/Thank-you-cai/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>謝謝你，菜！｜GitHub 展示版</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+    <div class="demo-notice" role="note">
+      <div>
+        <strong>GitHub 展示版</strong>
+        <span>菜籃、試玩訂單與收藏只保存在這台裝置，不會送出真實訂單。</span>
+      </div>
+      <a href="https://thank-you-cai.yao1230.chatgpt.site" target="_blank" rel="noreferrer">開啟正式菜攤 ↗</a>
+    </div>
+
+    <header class="topbar">
+      <button class="brand" type="button" data-view-target="market" aria-label="回到菜攤首頁">
+        <span class="brand__mark" aria-hidden="true">菜</span>
+        <span><strong>謝謝你，菜！</strong><small>自家菜攤週報</small></span>
+      </button>
+
+      <nav class="topnav" aria-label="主要選單">
+        <button type="button" class="is-active" data-view-target="market" aria-pressed="true">逛菜攤</button>
+        <button type="button" data-view-target="gacha" aria-pressed="false">抽菜試玩</button>
+        <button type="button" data-view-target="orders" aria-pressed="false">本機訂單</button>
+      </nav>
+
+      <button class="cart-shortcut" type="button" data-scroll-cart aria-label="查看菜籃">
+        <span aria-hidden="true">籃</span>
+        <strong id="header-cart-count">0</strong>
+      </button>
+    </header>
+
+    <main id="main-content">
+      <section class="view is-active" data-view="market" aria-labelledby="hero-title">
+        <div class="hero section-wrap">
+          <div class="hero__copy">
+            <span class="eyebrow">PIXEL FARM MARKET・GITHUB PAGES</span>
+            <h1 id="hero-title">這週吃什麼？<br />來菜攤挑一籃。</h1>
+            <p>每張卡都標好菜況、果況與價格。選好喜歡的蔬果，就能在瀏覽器裡生成一張可愛的試玩訂單。</p>
+            <div class="hero__actions">
+              <a class="primary-button" href="#weekly-market">開始挑菜</a>
+              <button class="secondary-button" type="button" data-view-target="gacha">試試抽菜機</button>
+            </div>
+            <div class="hero__facts" aria-label="本週菜攤資訊">
+              <span><strong id="week-label">本週菜單</strong>每週更新</span>
+              <span><strong>滿 NT$500</strong>試算免運</span>
+              <span><strong>8 種蔬果</strong>示範資料</span>
+            </div>
+          </div>
+
+          <div class="hero__crate" aria-label="本週蔬果展示">
+            <span class="crate-emoji crate-emoji--large" aria-hidden="true">🥬</span>
+            <span class="crate-emoji" aria-hidden="true">🥕</span>
+            <span class="crate-emoji" aria-hidden="true">🍍</span>
+            <span class="crate-emoji" aria-hidden="true">🍅</span>
+            <div><strong>今日好菜</strong><small>新鮮、惜食都清楚標示</small></div>
+          </div>
+        </div>
+
+        <section class="grade-guide section-wrap" aria-labelledby="grade-title">
+          <div class="section-heading section-heading--compact">
+            <div><span class="eyebrow">CARD CONDITION</span><h2 id="grade-title">S・A・B・C 菜況分級</h2></div>
+            <p>所有等級都通過食用安全底線；C 級是惜食品，不是腐壞品。</p>
+          </div>
+          <div class="grade-grid">
+            <details class="grade-rule grade-rule--s"><summary><span class="grade-badge">S</span><strong>閃亮特選</strong><b aria-hidden="true">＋</b></summary><p>外觀與鮮度最佳，適合送禮、生食與精緻料理。</p></details>
+            <details class="grade-rule grade-rule--a"><summary><span class="grade-badge">A</span><strong>新鮮優選</strong><b aria-hidden="true">＋</b></summary><p>日常品質很好，可能有少量自然皮痕或形狀差異。</p></details>
+            <details class="grade-rule grade-rule--b"><summary><span class="grade-badge">B</span><strong>實惠好味</strong><b aria-hidden="true">＋</b></summary><p>外觀普通但好吃，整理後仍可安心正常食用。</p></details>
+            <details class="grade-rule grade-rule--c"><summary><span class="grade-badge">C</span><strong>惜食即享</strong><b aria-hidden="true">＋</b></summary><p>熟度較高，適合今天享用、料理或打果汁。</p></details>
+          </div>
+        </section>
+
+        <section id="weekly-market" class="market-section section-wrap" aria-labelledby="market-title">
+          <div class="section-heading">
+            <div><span class="eyebrow">THIS WEEK'S HARVEST</span><h2 id="market-title">本週上架</h2><p id="product-count">8 種蔬果等你挑選</p></div>
+            <label class="search-box">
+              <span class="sr-only">搜尋蔬果</span>
+              <input id="search-input" type="search" placeholder="搜尋菜名、卡名或產地" autocomplete="off" />
+              <span aria-hidden="true">⌕</span>
+            </label>
+          </div>
+
+          <div class="filters" aria-label="商品篩選">
+            <div class="filter-group" aria-label="分類">
+              <button type="button" class="is-active" data-category="all" aria-pressed="true">全部</button>
+              <button type="button" data-category="vegetable" aria-pressed="false">蔬菜</button>
+              <button type="button" data-category="fruit" aria-pressed="false">水果</button>
+            </div>
+            <div class="filter-group" aria-label="品質等級">
+              <button type="button" class="is-active" data-grade="all" aria-pressed="true">全部等級</button>
+              <button type="button" data-grade="S" aria-pressed="false">S</button>
+              <button type="button" data-grade="A" aria-pressed="false">A</button>
+              <button type="button" data-grade="B" aria-pressed="false">B</button>
+              <button type="button" data-grade="C" aria-pressed="false">C</button>
+            </div>
+          </div>
+
+          <div class="market-layout">
+            <div id="product-grid" class="product-grid" aria-live="polite"></div>
+
+            <aside id="cart-panel" class="cart-panel" aria-labelledby="cart-title">
+              <div class="cart-panel__header">
+                <div><span class="eyebrow">YOUR BASKET</span><h2 id="cart-title">我的菜籃</h2></div>
+                <span id="cart-count" class="cart-count">0</span>
+              </div>
+              <div id="cart-lines"></div>
+              <div class="cart-totals">
+                <span><span>小計</span><strong id="cart-subtotal">NT$0</strong></span>
+                <span><span>運費試算</span><strong id="cart-delivery">免費</strong></span>
+                <span class="cart-total"><span>合計</span><strong id="cart-total">NT$0</strong></span>
+              </div>
+              <p id="shipping-note" class="shipping-note">再挑 NT$500 即達免運門檻。</p>
+              <button id="checkout-button" type="button" class="primary-button primary-button--wide" disabled>產生試玩訂單</button>
+              <small class="local-only">不會收集電話或地址，也不會送出真實訂單。</small>
+            </aside>
+          </div>
+        </section>
+      </section>
+
+      <section class="view page-section section-wrap" data-view="gacha" aria-labelledby="gacha-title" hidden>
+        <div class="page-intro page-intro--gacha">
+          <div><span class="eyebrow">LOCAL VEGGIE GACHA</span><h1 id="gacha-title">抽一張本週好菜</h1><p>每次花 50 點抽一張蔬果卡。這是純前端試玩，點數與收藏只會留在目前瀏覽器。</p></div>
+          <div class="point-board"><span>本機點數</span><strong id="points-value">150</strong><small>水果點</small></div>
+        </div>
+
+        <div class="gacha-layout">
+          <div class="gacha-machine">
+            <div id="gacha-screen" class="gacha-machine__screen" aria-live="polite"><span aria-hidden="true">🍍</span><strong>準備好了嗎？</strong><small>按下旋鈕抽菜卡</small></div>
+            <button id="draw-button" type="button" class="gacha-knob" aria-label="花 50 點抽一張菜卡"><span aria-hidden="true">↻</span></button>
+            <button id="draw-action" type="button" class="primary-button">花 50 點抽卡</button>
+          </div>
+          <div class="pixel-panel">
+            <span class="eyebrow">DROP RATE</span>
+            <h2>本週收藏簿</h2>
+            <p>抽到的卡片會保存在這台裝置。清除瀏覽器資料後，收藏也會一起消失。</p>
+            <div id="collection-grid" class="collection-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view page-section section-wrap" data-view="orders" aria-labelledby="orders-title" hidden>
+        <div class="page-intro">
+          <div><span class="eyebrow">LOCAL ORDER PREVIEW</span><h1 id="orders-title">本機試玩訂單</h1><p>這裡只顯示你在此瀏覽器建立的訂單預覽，沒有傳送給攤主，也不代表訂購成功。</p></div>
+          <button id="clear-data-button" type="button" class="secondary-button">清除本機試玩資料</button>
+        </div>
+        <div id="orders-list" class="orders-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="footer section-wrap">
+      <div><strong>謝謝你，菜！</strong><span>把每一份好味道，送到剛剛好的地方。</span></div>
+      <div class="footer__links">
+        <a href="https://github.com/xieyaozhong/Thank-you-cai" target="_blank" rel="noreferrer">GitHub 原始碼 ↗</a>
+        <a href="https://thank-you-cai.yao1230.chatgpt.site" target="_blank" rel="noreferrer">正式雲端版 ↗</a>
+      </div>
+      <small>GitHub 展示版・商品為示範資料・真實下單請使用正式菜攤。</small>
+    </footer>
+
+    <button class="mobile-cart-bar" type="button" data-scroll-cart>
+      <span>菜籃 <strong id="mobile-cart-count">0</strong> 件</span>
+      <strong id="mobile-cart-total">NT$0</strong>
+    </button>
+
+    <dialog id="checkout-dialog" class="modal">
+      <form id="checkout-form" method="dialog">
+        <button class="modal-close" type="button" data-close-dialog aria-label="關閉">×</button>
+        <span class="eyebrow">LOCAL ORDER PREVIEW</span>
+        <h2>產生試玩訂單</h2>
+        <p>這份訂單只會存於你的瀏覽器，不會送出。請勿填寫真實電話或地址。</p>
+        <div id="checkout-summary" class="checkout-summary"></div>
+        <label>顯示名稱（可用暱稱）<input name="nickname" maxlength="20" placeholder="例如：小菜友" required /></label>
+        <label>試玩取貨時段
+          <select name="slot" required>
+            <option value="">請選擇</option>
+            <option>週六 10:00–12:00</option>
+            <option>週六 14:00–17:00</option>
+            <option>週日 10:00–12:00</option>
+          </select>
+        </label>
+        <label>備註（選填）<input name="note" maxlength="50" placeholder="例如：示範訂單" /></label>
+        <button class="primary-button primary-button--wide" type="submit">儲存到本機訂單</button>
+      </form>
+    </dialog>
+
+    <dialog id="receipt-dialog" class="modal receipt-modal">
+      <button class="modal-close" type="button" data-close-dialog aria-label="關閉">×</button>
+      <span class="receipt-face" aria-hidden="true">✓</span>
+      <h2>試玩訂單已儲存</h2>
+      <p>這不是正式訂單；若要真的購買，請前往正式雲端版。</p>
+      <div class="receipt-code"><span>本機展示編號</span><strong id="receipt-code">DEMO-0000</strong><small id="receipt-points">獲得 0 點試玩點數</small></div>
+      <button class="secondary-button" type="button" data-view-target="orders" data-close-dialog>查看本機訂單</button>
+      <a class="primary-button" href="https://thank-you-cai.yao1230.chatgpt.site" target="_blank" rel="noreferrer">前往正式菜攤 ↗</a>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <noscript><div class="noscript">這個展示頁需要 JavaScript 才能使用菜籃與抽卡功能。</div></noscript>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "謝謝你，菜！GitHub 展示版",
+  "short_name": "謝謝你，菜！",
+  "description": "可瀏覽每週蔬果、試玩菜籃與收藏抽卡的自家菜攤展示頁。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#183427",
+  "categories": ["shopping", "lifestyle"]
+}

@@ -4,6 +4,13 @@
   const STORAGE_KEY = "thank-you-cai-github-pages-v1";
   const GACHA_COST = 50;
   const OFFICIAL_SITE = "https://thank-you-cai.yao1230.chatgpt.site";
+  const GACHA_PHASES = {
+    turning: ["旋鈕轉動中…", "握緊，扭蛋機要啟動了"],
+    shaking: ["卡池翻滾中…", "本週好菜正在裡面碰撞"],
+    waiting: ["正在確認這顆扭蛋…", "馬上就會掉出來"],
+    dropping: ["扭蛋掉下來了！", "咚！請看取物口"],
+    revealing: ["扭蛋打開中…", "看看是哪一張蔬果卡"],
+  };
 
   const sprites = {
     cabbage: { pixels: ["....22....", "...2112...", "..213312..", ".21333312.", "2131313312", "2133333312", ".21333312.", "..211112..", "...2442...", "....44...."], palette: { 1: "#294529", 2: "#78a94b", 3: "#b8d46a", 4: "#d9e7a4" } },
@@ -52,6 +59,7 @@
   let query = "";
   let toastTimer = 0;
   let isDrawing = false;
+  let drawSequence = 0;
 
   const els = {
     productGrid: document.querySelector("#product-grid"),
@@ -76,7 +84,11 @@
     pointsValue: document.querySelector("#points-value"),
     drawButton: document.querySelector("#draw-button"),
     drawAction: document.querySelector("#draw-action"),
+    gachaMachine: document.querySelector("#gacha-machine"),
     gachaScreen: document.querySelector("#gacha-screen"),
+    gachaScreenArt: document.querySelector("#gacha-screen-art"),
+    gachaStatus: document.querySelector("#gacha-status"),
+    gachaHint: document.querySelector("#gacha-hint"),
     collectionGrid: document.querySelector("#collection-grid"),
     ordersList: document.querySelector("#orders-list"),
     clearDataButton: document.querySelector("#clear-data-button"),
@@ -303,23 +315,67 @@
     return pool[Math.floor(Math.random() * pool.length)] || products[Math.floor(Math.random() * products.length)];
   }
 
-  function drawCard() {
+  function setGachaPhase(phase) {
+    const busy = phase !== "idle";
+    els.gachaMachine.dataset.phase = phase;
+    els.gachaMachine.setAttribute("aria-busy", String(busy));
+    if (GACHA_PHASES[phase]) {
+      els.gachaStatus.textContent = GACHA_PHASES[phase][0];
+      els.gachaHint.textContent = GACHA_PHASES[phase][1];
+      els.drawAction.textContent = GACHA_PHASES[phase][0];
+    }
+  }
+
+  function setGachaDisplay(sprite, label, status, hint) {
+    els.gachaScreenArt.innerHTML = renderPixelSprite(sprite, label);
+    els.gachaStatus.textContent = status;
+    els.gachaHint.textContent = hint;
+  }
+
+  function waitForGacha(duration) {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  async function drawCard() {
     if (isDrawing || state.points < GACHA_COST) return;
+    const sequence = ++drawSequence;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const pause = (duration) => reduceMotion ? Promise.resolve() : waitForGacha(duration);
     isDrawing = true;
     state.points -= GACHA_COST;
     saveState();
     renderCollection();
-    els.gachaScreen.innerHTML = '<span aria-hidden="true">⋯</span><strong>抽卡中</strong><small>本週好菜正在轉出來</small>';
+    setGachaDisplay("pineapple", "金鑽鳳梨", "旋鈕轉動中…", "握緊，扭蛋機要啟動了");
+    setGachaPhase("turning");
 
-    window.setTimeout(() => {
+    try {
+      await pause(420);
+      if (sequence !== drawSequence) return;
+      setGachaPhase("shaking");
+      await pause(480);
+      if (sequence !== drawSequence) return;
+      setGachaPhase("waiting");
+      await pause(160);
+      if (sequence !== drawSequence) return;
+      setGachaPhase("dropping");
+      await pause(520);
+      if (sequence !== drawSequence) return;
+      setGachaPhase("revealing");
+      await pause(320);
+      if (sequence !== drawSequence) return;
+
       const product = chooseGachaProduct();
       state.collection[product.id] = Math.max(0, Number(state.collection[product.id] || 0)) + 1;
-      isDrawing = false;
       saveState();
-      els.gachaScreen.innerHTML = `${renderPixelSprite(product.sprite, product.name)}<strong>${product.grade} 級・${product.cardName}</strong><small>已存入本機收藏簿</small>`;
-      renderCollection();
+      setGachaDisplay(product.sprite, product.name, `${product.grade} 級・${product.cardName}`, "已存入本機收藏簿");
       showToast(`抽到「${product.cardName}」！`);
-    }, 720);
+    } finally {
+      if (sequence === drawSequence) {
+        isDrawing = false;
+        setGachaPhase("idle");
+        renderCollection();
+      }
+    }
   }
 
   function renderOrders() {
@@ -422,10 +478,13 @@
   function clearLocalData() {
     const confirmed = window.confirm("確定要清除這台裝置上的菜籃、試玩訂單、點數與收藏嗎？");
     if (!confirmed) return;
+    drawSequence += 1;
+    isDrawing = false;
+    setGachaPhase("idle");
     state = defaultState();
     saveState();
     renderAll();
-    els.gachaScreen.innerHTML = `${renderPixelSprite("pineapple", "金鑽鳳梨")}<strong>準備好了嗎？</strong><small>按下旋鈕抽菜卡</small>`;
+    setGachaDisplay("pineapple", "金鑽鳳梨", "準備好了嗎？", "按下旋鈕抽菜卡");
     showToast("本機試玩資料已清除。", true);
   }
 

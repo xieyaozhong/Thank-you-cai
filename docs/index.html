@@ -140,9 +140,20 @@
         </div>
 
         <div class="gacha-layout">
-          <div class="gacha-machine">
-            <div id="gacha-screen" class="gacha-machine__screen" aria-live="polite"><span data-sprite="pineapple" data-label="金鑽鳳梨"></span><strong>準備好了嗎？</strong><small>按下旋鈕抽菜卡</small></div>
-            <button id="draw-button" type="button" class="gacha-knob" aria-label="花 50 點抽一張菜卡"><span aria-hidden="true">↻</span></button>
+          <div id="gacha-machine" class="gacha-machine" data-phase="idle" aria-busy="false">
+            <div id="gacha-screen" class="gacha-machine__screen">
+              <div class="gacha-machine__balls" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="gacha-machine__screen-content" aria-live="polite" aria-atomic="true">
+                <span id="gacha-screen-art" class="gacha-machine__screen-art" data-sprite="pineapple" data-label="金鑽鳳梨"></span>
+                <strong id="gacha-status">準備好了嗎？</strong>
+                <small id="gacha-hint">按下旋鈕抽菜卡</small>
+              </div>
+            </div>
+            <button id="draw-button" type="button" class="gacha-knob" aria-label="花 50 點抽一張菜卡"><span class="gacha-knob__handle" aria-hidden="true">↻</span></button>
+            <div class="gacha-machine__chute" aria-hidden="true">
+              <span class="gacha-capsule"><span class="gacha-capsule__top"></span><span class="gacha-capsule__bottom"></span><span class="gacha-capsule__flash">✦</span></span>
+              <span class="gacha-machine__tray"></span>
+            </div>
             <button id="draw-action" type="button" class="primary-button">花 50 點抽卡</button>
           </div>
           <div class="pixel-panel">

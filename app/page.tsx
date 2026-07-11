@@ -23,6 +23,23 @@ import { EmptyState, GradeBadge, PixelSprite } from "./ui";
 
 const SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
 
+type DrawPhase = "idle" | "turning" | "shaking" | "waiting" | "dropping" | "revealing" | "syncing" | "error";
+
+const DRAW_PHASE_LABELS: Record<DrawPhase, string> = {
+  idle: "轉動旋鈕，扭出本週好菜",
+  turning: "旋鈕轉動中…",
+  shaking: "卡池翻滾中…",
+  waiting: "正在確認這顆扭蛋…",
+  dropping: "扭蛋掉下來了！",
+  revealing: "扭蛋打開中…",
+  syncing: "卡片已出現，正在收進圖鑑…",
+  error: "這次沒有轉成功",
+};
+
+function waitForAnimation(duration: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, duration));
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -51,13 +68,16 @@ export default function Home() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [receipt, setReceipt] = useState<Order | null>(null);
   const [drawResult, setDrawResult] = useState<CollectionCard | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawPhase, setDrawPhase] = useState<DrawPhase>("idle");
   const [verificationInputs, setVerificationInputs] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [busyAction, setBusyAction] = useState("");
   const toastTimer = useRef<number | null>(null);
+  const drawLockRef = useRef(false);
+
+  const isDrawing = drawPhase !== "idle";
 
   const applyMarketState = useCallback((state: MarketState) => {
     setInventory(state.products);
@@ -222,7 +242,7 @@ export default function Home() {
   };
 
   const drawCard = async () => {
-    if (isDrawing || inventory.length === 0) return;
+    if (drawLockRef.current || isDrawing || inventory.length === 0) return;
     if (!viewer) {
       window.location.assign(SIGN_IN_PATH);
       return;
@@ -231,18 +251,43 @@ export default function Home() {
       showToast(`還差 ${GACHA_COST - points} 點才能再抽一次。`);
       return;
     }
-    setIsDrawing(true);
+    drawLockRef.current = true;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pause = (duration: number) => reduceMotion ? Promise.resolve() : waitForAnimation(duration);
+    setDrawPhase("turning");
+    const drawOutcome = requestJson<{ card: CollectionCard }>("/api/gacha", { method: "POST", body: "{}" }).then(
+      ({ card }) => ({ ok: true as const, card }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
     try {
-      const [{ card }] = await Promise.all([
-        requestJson<{ card: CollectionCard }>("/api/gacha", { method: "POST", body: "{}" }),
-        new Promise((resolve) => window.setTimeout(resolve, 850)),
-      ]);
-      setDrawResult(card);
-      await refreshMarket();
-    } catch (error) {
-      showRequestError(error);
+      await pause(420);
+      setDrawPhase("shaking");
+      await pause(480);
+      setDrawPhase("waiting");
+
+      const outcome = await drawOutcome;
+      if (!outcome.ok) {
+        setDrawPhase("error");
+        await pause(260);
+        showRequestError(outcome.error);
+        return;
+      }
+
+      setDrawPhase("dropping");
+      await pause(520);
+      setDrawPhase("revealing");
+      await pause(320);
+      setDrawResult(outcome.card);
+      setDrawPhase("syncing");
+
+      try {
+        await refreshMarket();
+      } catch {
+        showToast("卡片已抽出，但點數與圖鑑暫時無法同步，請重新整理頁面。");
+      }
     } finally {
-      setIsDrawing(false);
+      drawLockRef.current = false;
+      setDrawPhase("idle");
     }
   };
 
@@ -386,12 +431,22 @@ export default function Home() {
             <div className="page-intro page-intro--gacha"><div><span className="eyebrow">FRUIT POINT GACHA</span><h1 id="gacha-title">水果抽卡樂園</h1><p>免費抽用完後，每次花 {GACHA_COST} 水果點。抽到的是收藏卡，不會自動加入實體訂單。</p></div><div className="point-board"><span>目前持有</span><strong>{points}</strong><small>水果點</small></div></div>
             {!viewer ? <div className="auth-panel"><span aria-hidden="true">◆</span><div><h2>登入後開始收藏</h2><p>每週送一次免費抽卡；完成訂單核銷還能累積水果點。</p></div><a className="primary-button" href={SIGN_IN_PATH}>使用 ChatGPT 登入</a></div> : <>
               <div className="gacha-layout">
-              <div className={`gacha-machine${isDrawing ? " is-drawing" : ""}`}>
-                <div className="gacha-machine__screen"><span className="gacha-machine__spark">✦</span><PixelSprite spriteKey="pineapple" label="金鑽鳳梨" /><span className="gacha-machine__spark">✦</span></div>
+              <div className="gacha-machine" data-phase={drawPhase} aria-busy={isDrawing}>
+                <div className="gacha-machine__screen">
+                  <div className="gacha-machine__balls" aria-hidden="true"><span /><span /><span /><span /><span /></div>
+                  <div className="gacha-machine__screen-content">
+                    <div className="gacha-machine__mascot"><span className="gacha-machine__spark" aria-hidden="true">✦</span><PixelSprite spriteKey="pineapple" label="金鑽鳳梨" /><span className="gacha-machine__spark" aria-hidden="true">✦</span></div>
+                    <strong>{DRAW_PHASE_LABELS[drawPhase]}</strong>
+                  </div>
+                </div>
                 <div className="gacha-machine__label">謝謝你菜・本週卡池</div>
-                <button type="button" className="gacha-knob" disabled={isDrawing || (freeDraws === 0 && points < GACHA_COST)} onClick={drawCard} aria-label={freeDraws > 0 ? "使用免費次數抽卡" : `使用 ${GACHA_COST} 點抽卡`}><span aria-hidden="true">↻</span></button>
-                <div className="gacha-machine__tray" aria-hidden="true" />
-                <button type="button" className="primary-button gacha-action" disabled={isDrawing || (freeDraws === 0 && points < GACHA_COST)} onClick={drawCard}>{isDrawing ? "轉動中…" : freeDraws > 0 ? `免費抽卡（剩 ${freeDraws} 次）` : `使用 ${GACHA_COST} 點抽一次`}</button>
+                <button type="button" className="gacha-knob" disabled={isDrawing || (freeDraws === 0 && points < GACHA_COST)} onClick={drawCard} aria-label={freeDraws > 0 ? "使用免費次數抽卡" : `使用 ${GACHA_COST} 點抽卡`}><span className="gacha-knob__handle" aria-hidden="true">↻</span></button>
+                <div className="gacha-machine__chute" aria-hidden="true">
+                  <span className="gacha-capsule"><span className="gacha-capsule__top" /><span className="gacha-capsule__bottom" /><span className="gacha-capsule__flash">✦</span></span>
+                  <span className="gacha-machine__tray" />
+                </div>
+                <span className="sr-only" role="status" aria-live="polite">{DRAW_PHASE_LABELS[drawPhase]}</span>
+                <button type="button" className="primary-button gacha-action" disabled={isDrawing || (freeDraws === 0 && points < GACHA_COST)} onClick={drawCard}>{isDrawing ? DRAW_PHASE_LABELS[drawPhase] : freeDraws > 0 ? `免費抽卡（剩 ${freeDraws} 次）` : `使用 ${GACHA_COST} 點抽一次`}</button>
               </div>
               <div className="gacha-info">
                 <div className="pixel-panel"><span className="eyebrow">DROP RATE</span><h2>本週卡池機率</h2><div className="rate-list">{GRADE_ORDER.map((grade) => <span key={grade}><GradeBadge grade={grade} /><strong>{GRADE_RULES[grade].drawWeight}%</strong></span>)}</div><p>先抽等級，再從該等級的本週卡片中等機率出現。重複卡會累積收藏張數。</p></div>

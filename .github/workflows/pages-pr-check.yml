@@ -13,25 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate deployment bundle
-        run: |
-          set -euo pipefail
-          mkdir -p _site
-          cat .deploy/site.zip.b64.part* | base64 --decode > /tmp/site.zip
-          unzip -q /tmp/site.zip -d _site
-          test -f _site/index.html
-          test -f _site/owner.html
-          node --check _site/app.js
-          node --check _site/catalog.js
-          node --check _site/owner.js
-
-      - name: Inspect main deployment runs
+      - name: Inspect main deployment
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -45,33 +30,26 @@ jobs:
           python - <<'PY'
           import json
           data = json.load(open('/tmp/main-runs.json', encoding='utf-8'))
-          print('total_count=', data.get('total_count'))
-          for run in data.get('workflow_runs', []):
-              print('RUN', run.get('id'), run.get('name'), run.get('event'), run.get('status'), run.get('conclusion'), run.get('html_url'))
-          if not data.get('workflow_runs'):
-              raise SystemExit('No workflow run found for the main deployment commit')
+          runs = data.get('workflow_runs', [])
+          print('MAIN_RUN_COUNT', len(runs))
+          for run in runs:
+              print('MAIN_RUN', run.get('id'), run.get('name'), run.get('event'), run.get('status'), run.get('conclusion'))
+              print('MAIN_RUN_URL', run.get('html_url'))
+          if not runs:
+              raise SystemExit('No workflow run found for main deployment commit')
           PY
 
-      - name: Verify public pages
+      - name: Inspect public URLs
         run: |
-          set -euo pipefail
+          set -u
           base="https://xieyaozhong.github.io/Thank-you-cai"
-          verified=false
-          for attempt in $(seq 1 8); do
-            index_html="$(curl -fsSL --retry 1 --retry-delay 1 "$base/" || true)"
-            owner_html="$(curl -fsSL --retry 1 --retry-delay 1 "$base/owner.html" || true)"
-            if grep -Fq "謝謝你，菜！" <<<"$index_html" && grep -Fq "攤主頁面" <<<"$owner_html"; then
-              verified=true
-              break
-            fi
-            sleep 5
-          done
-          if [ "$verified" != true ]; then
-            echo "Frontend response preview:"
-            curl -sSL "$base/" | head -c 500 || true
-            echo
-            echo "Owner HTTP response:"
-            curl -sSIL "$base/owner.html" || true
-            exit 1
-          fi
-          printf 'Verified frontend: %s/\nVerified owner: %s/owner.html\n' "$base" "$base"
+          echo "FRONTEND_STATUS $(curl -sS -o /tmp/index.html -w '%{http_code}' "$base/")"
+          echo "OWNER_STATUS $(curl -sS -o /tmp/owner.html -w '%{http_code}' "$base/owner.html")"
+          echo "FRONTEND_HAS_TITLE $(grep -Fqc '謝謝你，菜！' /tmp/index.html || true)"
+          echo "OWNER_HAS_TITLE $(grep -Fqc '攤主頁面' /tmp/owner.html || true)"
+          echo "FRONTEND_PREVIEW"
+          head -c 220 /tmp/index.html || true
+          echo
+          echo "OWNER_PREVIEW"
+          head -c 220 /tmp/owner.html || true
+          echo

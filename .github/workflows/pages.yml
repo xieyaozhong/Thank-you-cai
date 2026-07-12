@@ -43,6 +43,10 @@ jobs:
           cat .deploy/gacha-feedback/bundle.b64.part* | base64 --decode > /tmp/gacha-feedback.tar.gz
           tar -xzf /tmp/gacha-feedback.tar.gz -C _site
 
+          # Add the card visual upgrade before the customer app starts.
+          cat .deploy/card-visual/bundle.b64.part* | base64 --decode > /tmp/card-visual-upgrade.tar.gz
+          tar -xzf /tmp/card-visual-upgrade.tar.gz -C _site
+
           rm -f _site/catalog-extra.js
           python - <<'PY'
           from pathlib import Path
@@ -57,6 +61,16 @@ jobs:
               customer_html = customer_html.replace(
                   '<link rel="stylesheet" href="./styles.css" />',
                   '<link rel="stylesheet" href="./styles.css" />\n    <link rel="stylesheet" href="./gacha-feedback.css" />',
+              )
+          if 'card-visual-upgrade.css' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<link rel="stylesheet" href="./gacha-feedback.css" />',
+                  '<link rel="stylesheet" href="./gacha-feedback.css" />\n    <link rel="stylesheet" href="./card-visual-upgrade.css" />',
+              )
+          if 'card-visual-upgrade.js' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<script src="./catalog.js" defer></script>',
+                  '<script src="./catalog.js" defer></script>\n    <script src="./card-visual-upgrade.js" defer></script>',
               )
           if 'gacha-feedback.js' not in customer_html:
               customer_html = customer_html.replace(
@@ -74,16 +88,23 @@ jobs:
           test -f _site/SUPABASE_SETUP.sql
           test -f _site/gacha-feedback.js
           test -f _site/gacha-feedback.css
+          test -f _site/card-visual-upgrade.js
+          test -f _site/card-visual-upgrade.css
           grep -Fq "gacha-feedback.css" _site/customer.html
           grep -Fq "gacha-feedback.js" _site/customer.html
+          grep -Fq "card-visual-upgrade.css" _site/customer.html
+          grep -Fq "card-visual-upgrade.js" _site/customer.html
           grep -Fq "gacha-stage-lamps" _site/gacha-feedback.js
           grep -Fq "navigator.vibrate" _site/gacha-feedback.js
-          grep -Fq "prefers-reduced-motion" _site/gacha-feedback.css
+          grep -Fq "product-card__category-chip" _site/card-visual-upgrade.js
+          grep -Fq "upgradedSprites" _site/card-visual-upgrade.js
+          grep -Fq "prefers-reduced-motion" _site/card-visual-upgrade.css
           grep -Fq "營運總覽" _site/owner.html
           grep -Fq "owner_note" _site/SUPABASE_SETUP.sql
           grep -Fq "updateOrdersStatus" _site/cloud-client.js
           node --check _site/app.js
           node --check _site/gacha-feedback.js
+          node --check _site/card-visual-upgrade.js
           node --check _site/catalog.js
           node --check _site/cloud-client.js
           node --check _site/owner.js
@@ -91,9 +112,11 @@ jobs:
           const fs = require('fs');
           global.window = {};
           eval(fs.readFileSync('_site/catalog.js', 'utf8'));
+          eval(fs.readFileSync('_site/card-visual-upgrade.js', 'utf8').split('  const productById')[0] + '\n})();');
           const catalog = window.THANK_YOU_CAI_CATALOG;
           if (!catalog || catalog.products.length !== 40) throw new Error('Expected 40 products');
           if (new Set(catalog.products.map((item) => item.id)).size !== 40) throw new Error('Duplicate product IDs');
+          if (!catalog.sprites.cucumber || !catalog.sprites.bellpepper) throw new Error('Card sprite upgrades missing');
           NODE
           python - <<'PY'
           import json
@@ -119,6 +142,15 @@ jobs:
               'architecture': 'separate-customer-owner',
               'owner_dashboard': 'v2',
               'gacha_feedback': 'v2',
+              'card_visual': 'v2',
+              'card_visual_features': [
+                  'distinct-sprite-models',
+                  'fruit-vegetable-backgrounds',
+                  'category-badges',
+                  'card-nameplates',
+                  'layered-pixel-depth',
+                  'responsive-card-art',
+              ],
               'gacha_features': [
                   'phase-lamps',
                   'press-feedback',
@@ -170,7 +202,9 @@ jobs:
             if grep -Fq "顧客端" <<<"$portal" \
               && grep -Fq "CUSTOMER CHECKOUT" <<<"$customer" \
               && grep -Fq "gacha-feedback.js" <<<"$customer" \
+              && grep -Fq "card-visual-upgrade.js" <<<"$customer" \
               && grep -Fq "營運總覽" <<<"$owner" \
+              && grep -Fq '"card_visual": "v2"' <<<"$status_json" \
               && grep -Fq '"gacha_feedback": "v2"' <<<"$status_json" \
               && grep -Fq '"owner_dashboard": "v2"' <<<"$status_json" \
               && grep -Fq "$GITHUB_SHA" <<<"$status_json"; then
@@ -181,5 +215,6 @@ jobs:
           done
           test "$verified" = true
           echo "Verified portal: $base/"
+          echo "Verified customer card visual v2: $base/customer.html"
           echo "Verified customer gacha feedback v2: $base/customer.html"
           echo "Verified owner dashboard v2: $base/owner.html"

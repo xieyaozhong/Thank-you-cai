@@ -1,0 +1,72 @@
+(() => {
+  "use strict";
+
+  const sprites = {
+    cabbage: { pixels: ["....22....", "...2112...", "..213312..", ".21333312.", "2131313312", "2133333312", ".21333312.", "..211112..", "...2442...", "....44...."], palette: { 1: "#294529", 2: "#78a94b", 3: "#b8d46a", 4: "#d9e7a4" } },
+    bokchoy: { pixels: ["...11.11..", "..1221221.", ".122212221", "..1222221.", "...1331...", "...1331...", "..143341..", ".14433441.", "..444444..", "...4444..."], palette: { 1: "#294529", 2: "#397247", 3: "#78a94b", 4: "#d9e7a4" } },
+    cucumber: { pixels: ["..........", ".......11.", "......1221", ".....12321", "....12321.", "...12321..", "..12321...", ".12321....", "12221.....", ".111......"], palette: { 1: "#294529", 2: "#397247", 3: "#a7cc55" } },
+    carrot: { pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "...1331...", "....33....", "....33....", "....33....", "....33....", "....11...."], palette: { 1: "#7a3e2b", 2: "#397247", 3: "#e97e2e" } },
+    guava: { pixels: ["....11....", "...1221...", "..122221..", ".12333321.", "1234444321", "1234444321", ".12344321.", "..122221..", "...1111...", ".........."], palette: { 1: "#294529", 2: "#78a94b", 3: "#d9e7a4", 4: "#f4b7ad" } },
+    banana: { pixels: ["..........", "..11......", ".1221.....", ".13321....", "..13321...", "...13321..", "....13321.", ".....1221.", "......11..", ".........."], palette: { 1: "#805b2c", 2: "#f1bd3d", 3: "#ffe26a" } },
+    pineapple: { pixels: ["...2..2...", "..222222..", "...2222...", "...1111...", "..133331..", "..131131..", "..133331..", "..131131..", "..133331..", "...1111..."], palette: { 1: "#805b2c", 2: "#397247", 3: "#f1bd3d" } },
+    tomato: { pixels: ["....22....", "...2222...", "...2112...", "..133331..", ".13333331.", ".13343331.", ".13333331.", "..133331..", "...1111...", ".........."], palette: { 1: "#8f3028", 2: "#397247", 3: "#d84d3e", 4: "#ff9d68" } },
+    eggplant: { pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "..133331..", ".13333331.", ".13343331.", "..133331..", "...1111...", ".........."], palette: { 1: "#3b214c", 2: "#397247", 3: "#70408f", 4: "#a56cc1" } },
+    corn: { pixels: ["...22.22..", "..222222..", "...2112...", "..133331..", ".13434331.", ".13343331.", ".13434331.", "..133331..", "...1111...", "..22..22.."], palette: { 1: "#805b2c", 2: "#397247", 3: "#f1bd3d", 4: "#ffe26a" } },
+    pumpkin: { pixels: ["....22....", "...2112...", "..111111..", ".13344331.", "1334444331", "1334344331", "1334444331", ".13344331.", "..111111..", ".........."], palette: { 1: "#7a3e2b", 2: "#397247", 3: "#cf6328", 4: "#f29a3a" } },
+    onion: { pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "..134431..", ".13444431.", ".13444431.", "..134431..", "...1111...", "....11...."], palette: { 1: "#7a5131", 2: "#78a94b", 3: "#c78d55", 4: "#f2d2a1" } },
+    pepper: { pixels: ["....22....", "...2222...", "...2112...", "..133331..", ".13333331.", ".13343331.", ".13333331.", "..133331..", "...1111...", ".........."], palette: { 1: "#294529", 2: "#397247", 3: "#5e9b42", 4: "#9ccc5a" } },
+    strawberry: { pixels: ["...2222...", "..222222..", "...2112...", "..133331..", ".13434331.", ".13343331.", ".13434331.", "..133331..", "...1111...", ".........."], palette: { 1: "#8f3028", 2: "#397247", 3: "#d84d3e", 4: "#ffd76b" } },
+    dragonfruit: { pixels: ["...22.22..", "..222222..", "...2112...", "..133331..", ".13444331.", "1344434331", "1344444331", ".13343331.", "..111111..", "...2..2..."], palette: { 1: "#8d315f", 2: "#78a94b", 3: "#e85d98", 4: "#fff0dc" } },
+    orange: { pixels: ["....22....", "...2112...", "..111111..", ".13333331.", "1333443331", "1333443331", ".13333331.", "..133331..", "...1111...", ".........."], palette: { 1: "#80502b", 2: "#397247", 3: "#e97e2e", 4: "#ffc75a" } },
+
+    sweetpotatoleaf: { pixels: ["..11..11..", ".12211221.", "1222222221", ".12222221.", "..122221..", "...1331...", "...1331...", "..143341..", ".14433441.", "..444444.."], palette: { 1: "#294529", 2: "#397247", 3: "#78a94b", 4: "#b8d46a" } },
+    broccoli: { pixels: ["..222222..", ".223232322.", "2233333322", ".23333332.", "..222222..", "...1441...", "...1441...", "...1441...", "..144441..", "...1111..."], palette: { 1: "#294529", 2: "#397247", 3: "#78a94b", 4: "#b8d46a" } },
+    radish: { pixels: ["...22.22..", "..222222..", "...2112...", "...1331...", "..133331..", ".13333331.", ".13444331.", "..144441..", "...4444...", "....44...."], palette: { 1: "#7a5131", 2: "#397247", 3: "#f4f0df", 4: "#d9d3c3" } },
+    potato: { pixels: ["..........", "...1111...", "..122221..", ".12232221.", "1222222321", "1223222221", ".12222221.", "..122221..", "...1111...", ".........."], palette: { 1: "#805b2c", 2: "#c78d55", 3: "#7a5131" } },
+    sweetpotato: { pixels: ["..........", "....11....", "...1221...", "..123321..", ".12333321.", "1233333321", ".12333321.", "..123321..", "...1221...", "....11...."], palette: { 1: "#5c2f45", 2: "#8d315f", 3: "#d98a6a" } },
+    loofah: { pixels: ["..........", ".......11.", "......1221", ".....12321", "....12321.", "...12321..", "..12321...", ".12321....", "12221.....", ".111......"], palette: { 1: "#294529", 2: "#78a94b", 3: "#b8d46a" } },
+    spinach: { pixels: ["..11..11..", ".12211221.", "1222222221", ".12222221.", "..122221..", "...1331...", "...1331...", "..133331..", ".14433441.", "..444444.."], palette: { 1: "#183427", 2: "#397247", 3: "#78a94b", 4: "#b8d46a" } },
+    mushroom: { pixels: ["..........", "...1111...", "..122221..", ".12333321.", "1233333321", ".11111111.", "...1441...", "...1441...", "...1441...", "...1111..."], palette: { 1: "#7a5131", 2: "#c78d55", 3: "#f2d2a1", 4: "#fff0dc" } },
+    mango: { pixels: ["....22....", "...2112...", "..111111..", ".13333331.", "1333443331", "1334444331", ".13344431.", "..133331..", "...1111...", ".........."], palette: { 1: "#80502b", 2: "#397247", 3: "#f1bd3d", 4: "#e97e2e" } },
+    watermelon: { pixels: ["..........", "...1111...", "..122221..", ".12333321.", "1233433321", "1233343321", ".12333321.", "..122221..", "...1111...", ".........."], palette: { 1: "#294529", 2: "#397247", 3: "#d84d3e", 4: "#183427" } },
+    passionfruit: { pixels: ["..........", "....22....", "...2112...", "..133331..", ".13444431.", ".13434331.", ".13444431.", "..133331..", "...1111...", ".........."], palette: { 1: "#4d273f", 2: "#397247", 3: "#70408f", 4: "#ffd76b" } },
+    waxapple: { pixels: ["....22....", "...2222...", "...2112...", "..133331..", ".13333331.", ".13444331.", "..144441..", "...4444...", "....44....", ".........."], palette: { 1: "#8f3028", 2: "#397247", 3: "#d84d3e", 4: "#f4b7ad" } },
+  };
+
+  const products = [
+    { id: "cabbage-a", name: "高麗菜", cardName: "翠玉高麗菜", category: "vegetable", grade: "A", price: 80, unit: "顆", origin: "雲林", stock: 18, max: 3, note: "葉球扎實，外葉有少量自然擦痕。", sprite: "cabbage" },
+    { id: "bokchoy-s", name: "青江菜", cardName: "晨露青江菜", category: "vegetable", grade: "S", price: 45, unit: "把", origin: "彰化", stock: 12, max: 5, note: "清晨採收，葉片挺脆飽水。", sprite: "bokchoy" },
+    { id: "cucumber-a", name: "小黃瓜", cardName: "咔滋小黃瓜", category: "vegetable", grade: "A", price: 65, unit: "袋（600g）", origin: "南投", stock: 14, max: 4, note: "爽脆清甜，部分瓜身微彎。", sprite: "cucumber" },
+    { id: "carrot-b", name: "紅蘿蔔", cardName: "彎彎紅蘿蔔", category: "vegetable", grade: "B", price: 42, unit: "袋（3 根）", origin: "台中", stock: 20, max: 4, note: "大小不一、形狀彎曲，甜味與口感正常。", sprite: "carrot" },
+    { id: "guava-s", name: "珍珠芭樂", cardName: "星光珍珠芭樂", category: "fruit", grade: "S", price: 105, unit: "斤", origin: "高雄", stock: 10, max: 3, note: "果型均勻、硬脆，甜度佳。", sprite: "guava" },
+    { id: "banana-c", name: "香蕉", cardName: "甜甜惜食香蕉", category: "fruit", grade: "C", price: 45, unit: "把", origin: "屏東", stock: 8, max: 2, note: "已熟透且有糖斑，建議今天吃或打果汁。", sprite: "banana" },
+    { id: "pineapple-b", name: "金鑽鳳梨", cardName: "迷你金鑽鳳梨", category: "fruit", grade: "B", price: 110, unit: "顆", origin: "嘉義", stock: 9, max: 2, note: "果型略小，香氣與果肉狀況正常。", sprite: "pineapple" },
+    { id: "tomato-a", name: "玉女小番茄", cardName: "紅寶石小番茄", category: "fruit", grade: "A", price: 95, unit: "盒", origin: "嘉義", stock: 16, max: 4, note: "果色自然，少量大小差異，酸甜清脆。", sprite: "tomato" },
+    { id: "eggplant-a", name: "茄子", cardName: "紫晶茄子", category: "vegetable", grade: "A", price: 58, unit: "袋（3 條）", origin: "屏東", stock: 15, max: 4, note: "果皮亮紫，少量自然彎曲。", sprite: "eggplant" },
+    { id: "corn-s", name: "水果玉米", cardName: "金陽水果玉米", category: "vegetable", grade: "S", price: 75, unit: "支", origin: "嘉義", stock: 12, max: 4, note: "清晨採收，甜脆多汁，可直接生食。", sprite: "corn" },
+    { id: "pumpkin-b", name: "栗子南瓜", cardName: "圓滾栗子南瓜", category: "vegetable", grade: "B", price: 120, unit: "顆", origin: "花蓮", stock: 7, max: 2, note: "大小略有差異，果肉粉糯香甜。", sprite: "pumpkin" },
+    { id: "onion-c", name: "洋蔥", cardName: "惜食甜洋蔥", category: "vegetable", grade: "C", price: 39, unit: "袋（2 顆）", origin: "屏東", stock: 11, max: 3, note: "外皮略乾或有壓痕，剝除後可安心料理。", sprite: "onion" },
+    { id: "pepper-a", name: "青椒", cardName: "翡翠青椒", category: "vegetable", grade: "A", price: 60, unit: "袋（3 顆）", origin: "南投", stock: 13, max: 4, note: "色澤亮綠，果型略有自然差異。", sprite: "pepper" },
+    { id: "strawberry-s", name: "草莓", cardName: "晨露紅寶石草莓", category: "fruit", grade: "S", price: 180, unit: "盒", origin: "苗栗", stock: 8, max: 2, note: "果色鮮紅，香氣飽滿，當日冷藏出貨。", sprite: "strawberry" },
+    { id: "dragonfruit-b", name: "紅龍果", cardName: "星點紅龍果", category: "fruit", grade: "B", price: 95, unit: "顆", origin: "台南", stock: 10, max: 3, note: "果型略小，果肉清甜、籽粒分明。", sprite: "dragonfruit" },
+    { id: "orange-a", name: "柳丁", cardName: "日光香甜柳丁", category: "fruit", grade: "A", price: 89, unit: "袋（4 顆）", origin: "台南", stock: 14, max: 3, note: "果皮有少量自然斑點，汁多酸甜。", sprite: "orange" },
+
+    { id: "sweetpotatoleaf-a", name: "地瓜葉", cardName: "嫩綠地瓜葉", category: "vegetable", grade: "A", price: 42, unit: "把", origin: "彰化", stock: 20, max: 5, note: "葉片嫩綠，適合清炒或汆燙。", sprite: "sweetpotatoleaf" },
+    { id: "broccoli-s", name: "青花菜", cardName: "翡翠青花菜", category: "vegetable", grade: "S", price: 88, unit: "顆", origin: "南投", stock: 10, max: 3, note: "花球緊實，梗部清甜爽脆。", sprite: "broccoli" },
+    { id: "radish-b", name: "白蘿蔔", cardName: "雪白白蘿蔔", category: "vegetable", grade: "B", price: 55, unit: "條", origin: "雲林", stock: 16, max: 4, note: "外觀略有土痕，煮湯清甜。", sprite: "radish" },
+    { id: "potato-a", name: "馬鈴薯", cardName: "暖陽馬鈴薯", category: "vegetable", grade: "A", price: 68, unit: "袋（600g）", origin: "台中", stock: 14, max: 4, note: "口感綿密，適合燉煮與烘烤。", sprite: "potato" },
+    { id: "sweetpotato-s", name: "台農地瓜", cardName: "蜜香台農地瓜", category: "vegetable", grade: "S", price: 95, unit: "袋（1斤）", origin: "雲林", stock: 12, max: 3, note: "熟成後蜜香濃郁，烤食鬆甜。", sprite: "sweetpotato" },
+    { id: "loofah-b", name: "絲瓜", cardName: "清甜絲瓜", category: "vegetable", grade: "B", price: 52, unit: "條", origin: "嘉義", stock: 15, max: 4, note: "瓜身微彎，果肉水嫩清甜。", sprite: "loofah" },
+    { id: "spinach-a", name: "菠菜", cardName: "晨採菠菜", category: "vegetable", grade: "A", price: 48, unit: "把", origin: "彰化", stock: 18, max: 5, note: "葉色深綠，汆燙後口感柔嫩。", sprite: "spinach" },
+    { id: "mushroom-a", name: "杏鮑菇", cardName: "白玉杏鮑菇", category: "vegetable", grade: "A", price: 72, unit: "包", origin: "南投", stock: 13, max: 4, note: "菇體飽滿，煎烤後多汁有彈性。", sprite: "mushroom" },
+    { id: "mango-s", name: "愛文芒果", cardName: "盛夏愛文芒果", category: "fruit", grade: "S", price: 220, unit: "盒（2顆）", origin: "台南", stock: 7, max: 2, note: "果香濃郁，熟度適中、果肉細緻。", sprite: "mango" },
+    { id: "watermelon-b", name: "小玉西瓜", cardName: "月光小玉西瓜", category: "fruit", grade: "B", price: 160, unit: "顆", origin: "花蓮", stock: 6, max: 2, note: "果型略小，果肉清甜多汁。", sprite: "watermelon" },
+    { id: "passionfruit-a", name: "百香果", cardName: "香氣百香果", category: "fruit", grade: "A", price: 120, unit: "袋（6顆）", origin: "南投", stock: 11, max: 3, note: "酸甜香氣明亮，表皮自然皺縮時更甜。", sprite: "passionfruit" },
+    { id: "waxapple-s", name: "黑珍珠蓮霧", cardName: "黑珍珠蓮霧", category: "fruit", grade: "S", price: 240, unit: "盒", origin: "屏東", stock: 8, max: 2, note: "果色深紅，口感清脆、汁水豐富。", sprite: "waxapple" },
+  ];
+
+  window.THANK_YOU_CAI_CATALOG = Object.freeze({
+    sprites: Object.freeze(sprites),
+    products: Object.freeze(products.map((product) => Object.freeze({ ...product }))),
+  });
+})();

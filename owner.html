@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#183427" />
+    <meta name="description" content="謝謝你，菜！本機攤主管理頁面。" />
+    <title>攤主頁面｜謝謝你，菜！</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./owner.css" />
+    <script src="./catalog.js" defer></script>
+    <script src="./owner.js" defer></script>
+  </head>
+  <body class="owner-page">
+    <a class="skip-link" href="#owner-main">跳到管理內容</a>
+    <div class="demo-notice" role="note">
+      <div><strong>本機攤主管理</strong><span>設定只保存在目前瀏覽器，不會同步到其他裝置。</span></div>
+      <a href="./index.html">查看菜攤 →</a>
+    </div>
+
+    <header class="topbar owner-topbar">
+      <a class="brand owner-brand" href="./index.html" aria-label="回到菜攤首頁">
+        <span class="brand__mark" aria-hidden="true">菜</span>
+        <span><strong>謝謝你，菜！</strong><small>攤主工作台</small></span>
+      </a>
+      <nav class="topnav" aria-label="攤主選單">
+        <a class="topnav__link is-active" href="#settings">商品設定</a>
+        <a class="topnav__link" href="#orders">訂單摘要</a>
+        <a class="topnav__link" href="./index.html">回到菜攤</a>
+      </nav>
+      <a class="primary-button owner-open-market" href="./index.html">開啟前台</a>
+    </header>
+
+    <main id="owner-main" class="owner-main section-wrap">
+      <section class="owner-hero">
+        <div>
+          <span class="eyebrow">STALLHOLDER DASHBOARD</span>
+          <h1>攤主頁面</h1>
+          <p>發布公告、調整價格與庫存，並決定哪些蔬果要在前台上架。前台與此頁必須在同一個網域中，才能共用本機設定。</p>
+        </div>
+        <div class="owner-link-card">
+          <span>獨立頁面連結</span>
+          <code id="owner-link">owner.html</code>
+          <button id="copy-link" type="button" class="secondary-button">複製連結</button>
+        </div>
+      </section>
+
+      <section id="settings" class="owner-section" aria-labelledby="settings-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">MARKET SETTINGS</span><h2 id="settings-title">菜攤設定</h2><p>儲存後重新整理前台即可看到變更；若前台同時開著，也會自動更新。</p></div>
+          <div class="owner-actions">
+            <button id="reset-settings" type="button" class="secondary-button">恢復預設</button>
+            <button id="save-settings" type="button" class="primary-button">儲存全部設定</button>
+          </div>
+        </div>
+
+        <label class="announcement-field">
+          <span>首頁攤主公告</span>
+          <textarea id="announcement-input" maxlength="120" rows="3" placeholder="例如：本週六早上十點開攤，地瓜葉限量供應！"></textarea>
+          <small><span id="announcement-count">0</span>/120 字</small>
+        </label>
+
+        <div class="owner-stats" aria-label="商品統計">
+          <article><span>商品總數</span><strong id="stat-total">28</strong></article>
+          <article><span>目前上架</span><strong id="stat-enabled">28</strong></article>
+          <article><span>總庫存</span><strong id="stat-stock">0</strong></article>
+          <article><span>本機訂單</span><strong id="stat-orders">0</strong></article>
+        </div>
+
+        <div id="owner-product-list" class="owner-product-list" aria-live="polite"></div>
+        <div class="sticky-save"><span id="save-status">尚未修改</span><button id="sticky-save-button" type="button" class="primary-button">儲存設定</button></div>
+      </section>
+
+      <section id="orders" class="owner-section" aria-labelledby="orders-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">LOCAL ORDER SUMMARY</span><h2 id="orders-title">本機訂單摘要</h2><p>只會讀取這台裝置在前台建立的試玩訂單。</p></div>
+          <button id="refresh-orders" type="button" class="secondary-button">重新整理</button>
+        </div>
+        <div id="owner-orders" class="owner-orders"></div>
+      </section>
+    </main>
+
+    <footer class="footer section-wrap">
+      <div><strong>謝謝你，菜！</strong><span>獨立靜態版攤主工作台。</span></div>
+      <div class="footer__links"><a href="./index.html">回到菜攤</a><a href="#owner-main">回到頁首 ↑</a></div>
+      <small>注意：此頁沒有登入機制；公開部署後，任何知道網址的人都能開啟，但設定只會影響各自的瀏覽器。</small>
+    </footer>
+    <div id="owner-toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

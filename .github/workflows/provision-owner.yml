@@ -1,0 +1,113 @@
+name: Provision Approved Owner Account
+
+on:
+  push:
+    branches: ["main"]
+    paths: [".github/workflows/provision-owner.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    env:
+      OWNER_EMAIL: "handsomeboy784@gmail.com"
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Read existing public Supabase configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('.github/workflows/supabase-cloud.yml').read_text(encoding='utf-8')
+          def value(name):
+              match = re.search(rf"^\s*{name}:\s*['\"]([^'\"]+)['\"]\s*$", text, re.M)
+              if not match:
+                  raise SystemExit(f'Missing {name}')
+              return match.group(1)
+          with open(Path(__import__('os').environ['GITHUB_ENV']), 'a', encoding='utf-8') as env:
+              env.write(f"SUPABASE_URL={value('SUPABASE_URL')}\n")
+              env.write(f"PUBLIC_KEY={value('KEY_PART_1')}.{value('KEY_PART_2')}.{value('KEY_PART_3')}\n")
+          PY
+
+      - name: Create or locate the approved Auth account
+        shell: bash
+        run: |
+          set -euo pipefail
+          temporary_password="$(openssl rand -hex 24)"
+          signup_payload="$(jq -nc --arg email "$OWNER_EMAIL" --arg password "$temporary_password" '{email:$email,password:$password,data:{requested_role:"store_owner",store_id:"thank-you-cai"}}')"
+          signup_status="$(curl -sS -o /tmp/signup.json -w '%{http_code}' \
+            -X POST \
+            -H "apikey: ${PUBLIC_KEY}" \
+            -H "Content-Type: application/json" \
+            --data "$signup_payload" \
+            "${SUPABASE_URL}/auth/v1/signup?redirect_to=https%3A%2F%2Fxieyaozhong.github.io%2FThank-you-cai%2Fowner.html" || true)"
+          signup_message="$(jq -r '.msg // .message // .error_description // empty' /tmp/signup.json 2>/dev/null || true)"
+          if [[ "$signup_status" == "200" || "$signup_status" == "201" ]]; then
+            signup_result="created"
+          elif grep -Eqi 'already|registered|exists' /tmp/signup.json; then
+            signup_result="already_exists"
+          else
+            signup_result="failed"
+          fi
+
+          recover_payload="$(jq -nc --arg email "$OWNER_EMAIL" '{email:$email}')"
+          recover_status="$(curl -sS -o /tmp/recover.json -w '%{http_code}' \
+            -X POST \
+            -H "apikey: ${PUBLIC_KEY}" \
+            -H "Content-Type: application/json" \
+            --data "$recover_payload" \
+            "${SUPABASE_URL}/auth/v1/recover?redirect_to=https%3A%2F%2Fxieyaozhong.github.io%2FThank-you-cai%2Fowner.html%3Fpassword-reset%3D1" || true)"
+          if [[ "$recover_status" == "200" || "$recover_status" == "204" ]]; then
+            recovery_result="email_requested"
+          else
+            recovery_result="failed"
+          fi
+
+          export SIGNUP_STATUS="$signup_status" SIGNUP_RESULT="$signup_result" SIGNUP_MESSAGE="$signup_message"
+          export RECOVER_STATUS="$recover_status" RECOVERY_RESULT="$recovery_result"
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          payload = {
+              'email': os.environ['OWNER_EMAIL'],
+              'signup_result': os.environ['SIGNUP_RESULT'],
+              'signup_http_status': os.environ['SIGNUP_STATUS'],
+              'signup_message': os.environ.get('SIGNUP_MESSAGE', '')[:200],
+              'password_setup': os.environ['RECOVERY_RESULT'],
+              'password_setup_http_status': os.environ['RECOVER_STATUS'],
+              'provisioned_at': datetime.now(timezone.utc).isoformat(),
+              'temporary_password_discarded': True,
+          }
+          with open('/tmp/owner-provision-status.json', 'w', encoding='utf-8') as f:
+              json.dump(payload, f, ensure_ascii=False, indent=2)
+              f.write('\n')
+          PY
+
+      - name: Checkout published branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Publish sanitized provisioning status
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/owner-provision-status.json owner-provision-status.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add owner-provision-status.json
+          git commit -m "Record owner account provisioning status" || exit 0
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              exit 0
+            fi
+            git pull --rebase origin gh-pages
+          done
+          exit 1

@@ -1,0 +1,87 @@
+name: Remove Customer Homepage Entry
+
+on:
+  push:
+    branches: ["main"]
+  workflow_run:
+    workflows: ["Publish GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: remove-customer-home-entry
+  cancel-in-progress: true
+
+jobs:
+  patch-customer-page:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout published site
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Remove homepage links from customer page
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('customer.html')
+          html = path.read_text(encoding='utf-8')
+          html = re.sub(
+              r'\s*<a[^>]*href=["\']\./index\.html["\'][^>]*>\s*切換入口\s*</a>',
+              '',
+              html,
+          )
+          html = re.sub(
+              r'\s*<a[^>]*href=["\']\./index\.html["\'][^>]*>\s*入口首頁\s*</a>',
+              '',
+              html,
+          )
+          path.write_text(html, encoding='utf-8')
+
+          assert '切換入口' not in html
+          assert '入口首頁' not in html
+          assert '本週上架' in html
+          assert '我的訂單' in html
+          assert 'checkout-button' in html
+          PY
+
+      - name: Commit published customer page
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add customer.html
+          if git diff --cached --quiet; then
+            echo "Customer homepage entry is already removed."
+          else
+            git commit -m "Remove customer homepage entry"
+            git push origin gh-pages
+          fi
+
+      - name: Verify public customer page
+        run: |
+          set -euo pipefail
+          url="https://xieyaozhong.github.io/Thank-you-cai/customer.html"
+          verified=false
+          for attempt in $(seq 1 36); do
+            page="$(curl -fsSL --retry 1 --retry-delay 1 "$url" || true)"
+            if ! grep -Fq '切換入口' <<<"$page" \
+              && ! grep -Fq '入口首頁' <<<"$page" \
+              && grep -Fq '本週上架' <<<"$page" \
+              && grep -Fq '我的訂單' <<<"$page"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = true
+          echo "Verified customer-only navigation: $url"

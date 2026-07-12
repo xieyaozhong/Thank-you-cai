@@ -1,0 +1,12 @@
+{
+  "name": "謝謝你，菜！獨立靜態版",
+  "short_name": "謝謝你，菜！",
+  "description": "可獨立瀏覽每週蔬果、使用本機菜籃與收藏抽卡的自家菜攤。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#183427",
+  "categories": ["shopping", "lifestyle"]
+}

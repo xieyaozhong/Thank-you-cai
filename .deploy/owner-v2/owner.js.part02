@@ -1,0 +1,194 @@
+fset -= 1) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      const key = localDateKey(date);
+      const total = orders.filter((order) => order.status === "completed" && localDateKey(order.created_at) === key).reduce((sum, order) => sum + Number(order.total || 0), 0);
+      days.push({ key, label: `${date.getMonth() + 1}/${date.getDate()}`, total });
+    }
+    const max = Math.max(1, ...days.map((day) => day.total));
+    els.weekRevenue.textContent = money(days.reduce((sum, day) => sum + day.total, 0));
+    els.salesChart.innerHTML = days.map((day) => `<div class="sales-bar" title="${escapeHtml(day.key)}：${escapeHtml(money(day.total))}"><div class="sales-bar__track"><span class="sales-bar__fill" style="height:${Math.max(day.total ? 5 : 0, Math.round(day.total / max * 100))}%"></span></div><strong>${day.total ? escapeHtml(money(day.total)) : "—"}</strong><small>${escapeHtml(day.label)}</small></div>`).join("");
+  }
+
+  function renderTopProducts() {
+    const totals = new Map();
+    orders.filter((order) => order.status !== "cancelled").forEach((order) => {
+      (Array.isArray(order.items) ? order.items : []).forEach((item) => {
+        const name = String(item.name || "未命名商品");
+        totals.set(name, (totals.get(name) || 0) + Number(item.quantity || 0));
+      });
+    });
+    const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    els.topProducts.innerHTML = ranked.length ? ranked.map(([name, count], index) => `<div><b>${index + 1}</b><span>${escapeHtml(name)}</span><strong>${count} 件</strong></div>`).join("") : '<p class="insight-empty">有訂單後會顯示熱銷排行。</p>';
+  }
+
+  function renderLowStock() {
+    if (!els.list.children.length) return;
+    const lows = [...els.list.querySelectorAll("[data-product-id]")].map((row) => {
+      const product = catalog.products.find((item) => item.id === row.dataset.productId);
+      return { ...productRowValues(row), name: product?.name || row.dataset.productId };
+    }).filter((item) => item.enabled && item.stock <= LOW_STOCK_THRESHOLD).sort((a, b) => a.stock - b.stock).slice(0, 6);
+    els.lowStockList.innerHTML = lows.length ? lows.map((item) => `<div><span aria-hidden="true">${item.stock === 0 ? "●" : "▲"}</span><span>${escapeHtml(item.name)}</span><strong class="${item.stock === 0 ? "is-danger" : ""}">${item.stock === 0 ? "售罄" : `${item.stock} 件`}</strong></div>`).join("") : '<p class="insight-empty">目前沒有低庫存商品。</p>';
+  }
+
+  function newOrderNotice(newOrders) {
+    if (!newOrders.length) return;
+    const total = newOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    showToast(`收到 ${newOrders.length} 張新訂單，合計 ${money(total)}。`);
+    beep();
+    if (Notification.permission === "granted") {
+      new Notification("謝謝你，菜！收到新訂單", { body: `${newOrders.length} 張新訂單，合計 ${money(total)}`, icon: "./og.png" });
+    }
+  }
+
+  function beep() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const context = new AudioContext();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = 720;
+      gain.gain.setValueAtTime(.001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.12, context.currentTime + .02);
+      gain.gain.exponentialRampToValueAtTime(.001, context.currentTime + .22);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + .24);
+      oscillator.addEventListener("ended", () => context.close());
+    } catch { /* Notification sound is optional. */ }
+  }
+
+  async function requestNotifications() {
+    if (!("Notification" in window)) { showToast("此瀏覽器不支援系統通知。", true); return; }
+    const permission = await Notification.requestPermission();
+    updateNotificationUi();
+    showToast(permission === "granted" ? "已開啟新訂單通知。" : "未取得通知權限。", permission !== "granted");
+  }
+
+  function updateNotificationUi() {
+    const supported = "Notification" in window;
+    const permission = supported ? Notification.permission : "unsupported";
+    const text = permission === "granted" ? "新訂單通知已開啟。" : permission === "denied" ? "通知已被瀏覽器封鎖，請到網站設定重新允許。" : permission === "unsupported" ? "此瀏覽器不支援系統通知。" : "尚未開啟通知。";
+    els.notificationStatus.textContent = text;
+    els.enableNotifications.textContent = permission === "granted" ? "新訂單通知已開啟" : "開啟新訂單通知";
+    els.enableNotifications.disabled = permission === "granted" || permission === "unsupported";
+    els.systemNotificationButton.textContent = permission === "granted" ? "通知已開啟" : "設定新訂單通知";
+    els.systemNotificationButton.disabled = permission === "granted" || permission === "unsupported";
+  }
+
+  async function refreshOrders(options = {}) {
+    if (refreshInProgress) return;
+    refreshInProgress = true;
+    els.refreshOrders.disabled = true;
+    els.refreshOrders.textContent = "同步中…";
+    try {
+      const nextOrders = localMode ? loadLocalOrders() : await cloud.listOrders();
+      const currentCodes = new Set(nextOrders.map((order) => order.order_code));
+      if (hasLoadedOrders && !options.silent) {
+        const fresh = nextOrders.filter((order) => !knownOrderCodes.has(order.order_code));
+        newOrderNotice(fresh);
+      }
+      orders = nextOrders;
+      knownOrderCodes = currentCodes;
+      hasLoadedOrders = true;
+      const now = new Date();
+      els.lastSynced.textContent = `${localMode ? "本機讀取" : "最後同步"}：${formatTime(now)}`;
+      els.diagnosticSync.textContent = formatDate(now);
+      setCloudStatus(localMode ? "目前顯示這台裝置建立的訂單。" : "所有顧客訂單已同步。", !localMode);
+      renderOrders();
+    } catch (error) {
+      showToast(error.message, true);
+      if (error.status === 401) showLogin();
+    } finally {
+      refreshInProgress = false;
+      els.refreshOrders.disabled = false;
+      els.refreshOrders.textContent = "立即同步";
+    }
+  }
+
+  async function saveSettings() {
+    const settings = collectSettings();
+    try {
+      els.save.disabled = true;
+      els.stickySave.disabled = true;
+      if (!localMode) await cloud.saveStoreSettings(settings);
+      saveLocalSettings(settings);
+      setDirty(false);
+      showToast(localMode ? "商品與公告已保存在這台裝置。" : "商品與公告已同步到所有顧客端。");
+    } catch (error) {
+      showToast(error.message, true);
+    } finally {
+      els.save.disabled = false;
+      els.stickySave.disabled = false;
+    }
+  }
+
+  async function loadRemoteSettings() {
+    if (localMode) { renderProducts(); return; }
+    try {
+      const remote = await cloud.getStoreSettings();
+      if (remote) {
+        const settings = { announcement: remote.announcement || "", products: remote.products || {}, updatedAt: remote.updated_at };
+        saveLocalSettings(settings);
+        renderProducts(settings);
+      } else renderProducts();
+    } catch (error) {
+      renderProducts();
+      showToast(`商品設定改用本機快取：${error.message}`, true);
+    }
+  }
+
+  async function setOrderStatus(order, status) {
+    if (!statusNames[status]) throw new Error("不支援的訂單狀態。");
+    if (order._local || localMode) updateLocalOrderStatus(order.order_code, status);
+    else await cloud.updateOrderStatus(order.id, status);
+    order.status = status;
+    order.updated_at = new Date().toISOString();
+  }
+
+  async function applyBulkStatus() {
+    const status = els.bulkOrderStatus.value;
+    if (!status || !selectedOrderIds.size) return;
+    const selected = orders.filter((order) => selectedOrderIds.has(orderKey(order)));
+    if (!confirm(`確定將 ${selected.length} 張訂單更新為「${statusNames[status]}」嗎？`)) return;
+    els.applyBulkStatus.disabled = true;
+    try {
+      const cloudOrders = selected.filter((order) => !order._local && !localMode);
+      if (cloudOrders.length) await cloud.updateOrdersStatus(cloudOrders.map((order) => order.id), status);
+      selected.filter((order) => order._local || localMode).forEach((order) => updateLocalOrderStatus(order.order_code, status));
+      selected.forEach((order) => { order.status = status; order.updated_at = new Date().toISOString(); });
+      selectedOrderIds.clear();
+      els.bulkOrderStatus.value = "";
+      renderOrders();
+      showToast(`已更新 ${selected.length} 張訂單。`);
+    } catch (error) {
+      showToast(error.message, true);
+    } finally {
+      syncOrderSelectionUi();
+    }
+  }
+
+  async function saveOrderMeta(order, patch) {
+    if (order._local || localMode) updateLocalOrderMeta(order.order_code, patch);
+    else await cloud.updateOrderDetails(order.id, patch);
+    if (Object.hasOwn(patch, "ownerNote")) order.owner_note = patch.ownerNote;
+    if (Object.hasOwn(patch, "priority")) order.priority = patch.priority;
+    order.updated_at = new Date().toISOString();
+  }
+
+  function orderSummary(order) {
+    const lines = (Array.isArray(order.items) ? order.items : []).map((item) => `- ${item.name} × ${Number(item.quantity) || 0}：${money((Number(item.price) || 0) * (Number(item.quantity) || 0))}`).join("\n");
+    return [`【謝謝你，菜！訂單】`, `訂單編號：${order.order_code}`, `狀態：${statusNames[order.status] || order.status}`, `顧客：${order.customer_name}`, `聯絡：${order.contact}`, `取貨：${order.pickup_slot}`, "", lines, "", `小計：${money(order.subtotal)}`, `運費：${money(order.delivery)}`, `合計：${money(order.total)}`, order.note ? `顧客備註：${order.note}` : "", order.owner_note ? `攤主備註：${order.owner_note}` : ""].filter(Boolean).join("\n");
+  }
+
+  async function copyOrder(order) {
+    const text = orderSummary(order);
+    try { await navigator.clipboard.writeText(text); showToast("訂單摘要已複製。"); }
+    catch { prompt("複製訂單摘要：", text); }
+  }
+
+  function printOrder(order) {
+    const popup = window.open("", "_blank", "width=760,height=900");
+    if (!popup) { showToast("瀏覽器封鎖了列印視窗。", true); return; }
+    const items = (Array.isArray(order.items) ? order.items : []).map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${Number(item.quantity) || 0}</td><td>${escapeHtml(money(item.price))}</td><td>${escapeHtml(money((Number(item.price) || 0) * (Number(item.quantity) || 0)))}</td></tr>`).join("");
+    popup.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${escapeHtml(order.order_code)}</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:32px auto;color:#183427}h1{margin-bottom:4px}small{color:#666}section{margin:20px 0;padding:14px;border:1px solid #aaa;border-radius:10px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:1.35rem;font-weight:800}@media print{body{margin:0}button{display:none}}</style></head><body><h1>謝謝你，菜！訂單</h1><small>${escapeHtml(formatDate(order.created_at))}</small><section><strong>${escapeHtml(order.order_code)}</strong><p>狀態：${escapeHtml(statusNames[order.status] || order.status)}<br>顧客：${escapeHtml(order.customer_name)}<br>聯絡：${escapeHtml(order.contact)}<br>取貨：${escapeHtml(order.pickup_slot)}</p></section><table><thead><tr><th>商品</th><th>數量</th><th>單價</th><th>金額</th></tr></thead><tbody>${items}</tbody></table>${order.note ? `<p>顧客備註：${escapeHtml(order.note)}</p>` : ""}${order.owner_note ? `<p>攤主備註：${escapeHtml(order.owner_note)}</p>` : ""}<p class="total">合計 ${escapeHtml(money(order.tot

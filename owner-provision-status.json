@@ -1,0 +1,10 @@
+{
+  "email": "handsomeboy784@gmail.com",
+  "signup_result": "created",
+  "signup_http_status": "200",
+  "signup_message": "",
+  "password_setup": "email_requested",
+  "password_setup_http_status": "200",
+  "provisioned_at": "2026-07-12T15:19:07.341151+00:00",
+  "temporary_password_discarded": true
+}

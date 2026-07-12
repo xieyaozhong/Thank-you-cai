@@ -1,0 +1,130 @@
+name: Apply Supabase Cloud Config
+
+on:
+  workflow_run:
+    workflows: ["Publish GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: supabase-cloud-config
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: 'https://prtjknkajxpbausyejqa.supabase.co'
+      STORE_ID: 'thank-you-cai'
+      KEY_PART_1: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+      KEY_PART_2: 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBydGprbmthanhwYmF1c3llanFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NjIxMjAsImV4cCI6MjA5OTQzODEyMH0'
+      KEY_PART_3: 'GyJ0yEfRV1iXZ29nuPMqfLwhh8IgSWSC34Z5EnNuA10'
+    steps:
+      - name: Checkout published site
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Apply public Supabase configuration
+        run: |
+          set -euo pipefail
+          export SUPABASE_PUBLISHABLE_KEY="${KEY_PART_1}.${KEY_PART_2}.${KEY_PART_3}"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = {
+              'provider': 'supabase',
+              'url': os.environ['SUPABASE_URL'],
+              'publishableKey': os.environ['SUPABASE_PUBLISHABLE_KEY'],
+              'storeId': os.environ['STORE_ID'],
+              'refreshIntervalMs': 10000,
+          }
+          content = 'window.THANK_YOU_CAI_CLOUD = Object.freeze(' + json.dumps(payload, ensure_ascii=False, indent=2) + ');\n'
+          Path('cloud-config.js').write_text(content, encoding='utf-8')
+          PY
+
+      - name: Check Supabase schema availability
+        run: |
+          set -euo pipefail
+          export SUPABASE_PUBLISHABLE_KEY="${KEY_PART_1}.${KEY_PART_2}.${KEY_PART_3}"
+          http_status="$(curl -sS -o /tmp/supabase-store-settings.json -w '%{http_code}' \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/store_settings?select=store_id&store_id=eq.${STORE_ID}&limit=1" || true)"
+          echo "SUPABASE_SCHEMA_HTTP_STATUS=${http_status}" >> "$GITHUB_ENV"
+
+      - name: Update deployment status
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path = Path('deployment-status.json')
+          status = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+          code = os.environ.get('SUPABASE_SCHEMA_HTTP_STATUS', '')
+          status.update({
+              'cloud_configured': True,
+              'cloud_provider': 'supabase',
+              'supabase_project_ref': 'prtjknkajxpbausyejqa',
+              'database_schema_ready': code == '200',
+              'database_check_http_status': code or 'network-error',
+              'cloud_checked_at': datetime.now(timezone.utc).isoformat(),
+          })
+          path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Validate cloud client files
+        run: |
+          set -euo pipefail
+          test -f owner.html
+          test -f customer.html
+          test -f cloud-client.js
+          grep -Fq 'prtjknkajxpbausyejqa.supabase.co' cloud-config.js
+          grep -Fq 'is_store_owner' cloud-client.js
+          grep -Fq 'store_settings' cloud-client.js
+          grep -Fq 'listOrders' cloud-client.js
+          node --check cloud-client.js
+
+      - name: Commit cloud configuration
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloud-config.js deployment-status.json
+          if git diff --cached --quiet; then
+            echo "Cloud configuration is already current."
+          else
+            git commit -m "Enable Supabase cloud database"
+            git push origin gh-pages
+          fi
+
+      - name: Verify public cloud configuration
+        run: |
+          set -euo pipefail
+          base="https://xieyaozhong.github.io/Thank-you-cai"
+          verified=false
+          for attempt in $(seq 1 36); do
+            config="$(curl -fsSL --retry 1 --retry-delay 1 "$base/cloud-config.js" || true)"
+            status_json="$(curl -fsSL --retry 1 --retry-delay 1 "$base/deployment-status.json" || true)"
+            owner="$(curl -fsSL --retry 1 --retry-delay 1 "$base/owner.html" || true)"
+            if grep -Fq 'prtjknkajxpbausyejqa.supabase.co' <<<"$config" \
+              && grep -Fq '"cloud_configured": true' <<<"$status_json" \
+              && grep -Fq '"supabase_project_ref": "prtjknkajxpbausyejqa"' <<<"$status_json" \
+              && grep -Fq '攤主登入' <<<"$owner"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = true
+          echo "Verified Supabase cloud configuration: $base/owner.html"

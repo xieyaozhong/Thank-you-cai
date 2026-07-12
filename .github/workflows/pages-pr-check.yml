@@ -1,0 +1,62 @@
+name: Pages deployment check
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-pr-check
+  cancel-in-progress: true
+
+jobs:
+  deploy-and-check:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cat .deploy/site.zip.b64.part* | base64 --decode > /tmp/site.zip
+          unzip -q /tmp/site.zip -d _site
+          test -f _site/index.html
+          test -f _site/owner.html
+          node --check _site/app.js
+          node --check _site/catalog.js
+          node --check _site/owner.js
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify public pages
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          base="${PAGE_URL%/}"
+          index_html="$(curl -fsSL --retry 8 --retry-delay 3 "$base/")"
+          owner_html="$(curl -fsSL --retry 8 --retry-delay 3 "$base/owner.html")"
+          grep -Fq "謝謝你，菜！" <<<"$index_html"
+          grep -Fq "攤主頁面" <<<"$owner_html"
+          printf 'Verified frontend: %s/\nVerified owner: %s/owner.html\n' "$base" "$base"

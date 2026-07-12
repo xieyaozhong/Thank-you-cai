@@ -20,7 +20,7 @@
 
 - `index.html`：菜攤前台頁面。
 - `owner.html`：獨立攤主頁面，部署後網址為網站根目錄加上 `/owner.html`。
-- `catalog.js`：前台與攤主頁共用的 28 種蔬果目錄與像素圖。
+- `catalog.js`、`catalog-extra.js`：前台與攤主頁共用的 40 種蔬果目錄與像素圖。
 - `owner.js`、`owner.css`：攤主公告、價格、庫存、上架狀態與本機訂單摘要。
 - `styles.css`：完整響應式樣式與扭蛋動畫。
 - `app.js`：商品、購物車、本機訂單與抽卡功能。

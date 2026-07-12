@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#183427" />
+  <meta name="description" content="謝謝你，菜！攤主訂單、庫存與營運管理工作台。" />
+  <title>攤主工作台｜謝謝你，菜！</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./owner.css" />
+  <script src="./cloud-config.js" defer></script>
+  <script src="./cloud-client.js" defer></script>
+  <script src="./catalog.js" defer></script>
+  <script src="./owner.js" defer></script>
+</head>
+<body class="owner-page">
+  <a class="skip-link" href="#owner-main">跳到管理內容</a>
+  <div class="demo-notice owner-connection" role="status">
+    <div><strong id="owner-cloud-title">攤主工作台</strong><span id="owner-cloud-status">正在檢查雲端服務…</span></div>
+    <div class="owner-connection__actions"><span id="owner-mode-badge" class="mode-badge">檢查中</span><a href="./index.html">切換入口</a></div>
+  </div>
+
+  <section id="owner-auth" class="owner-auth section-wrap">
+    <div class="owner-auth-card">
+      <span class="brand__mark" aria-hidden="true">帳</span>
+      <span class="eyebrow">SECURE STALLHOLDER ACCESS</span>
+      <h1>攤主登入</h1>
+      <p id="auth-description">登入後才能查看所有顧客訂單與聯絡資料。</p>
+      <form id="owner-login-form">
+        <label>攤主電子郵件<input name="email" type="email" autocomplete="username" required /></label>
+        <label>密碼<input name="password" type="password" autocomplete="current-password" required /></label>
+        <label class="remember-row"><input name="remember" type="checkbox" />在這台裝置保持登入</label>
+        <button id="owner-login-button" class="primary-button primary-button--wide" type="submit">登入工作台</button>
+      </form>
+      <button id="owner-reset-password" class="text-button" type="button">忘記密碼？寄送重設信</button>
+      <div id="cloud-setup-help" class="cloud-setup-help" hidden>
+        <strong>雲端尚未啟用</strong>
+        <p>目前可先使用本機預覽工作台。要接收所有顧客裝置的訂單，仍需建立 Supabase 專案並完成下方設定。</p>
+        <button id="owner-local-preview" class="primary-button primary-button--wide" type="button">開啟本機預覽工作台</button>
+      </div>
+      <a href="./customer.html">回到顧客菜攤</a>
+    </div>
+  </section>
+
+  <div id="owner-app" hidden>
+    <header class="topbar owner-topbar">
+      <a class="brand owner-brand" href="./index.html"><span class="brand__mark" aria-hidden="true">菜</span><span><strong>謝謝你，菜！</strong><small>攤主營運工作台</small></span></a>
+      <nav class="topnav" aria-label="攤主選單">
+        <a class="topnav__link is-active" href="#overview">營運總覽</a>
+        <a class="topnav__link" href="#orders">訂單管理</a>
+        <a class="topnav__link" href="#settings">商品庫存</a>
+        <a class="topnav__link" href="#system">系統設定</a>
+      </nav>
+      <button id="owner-logout" class="secondary-button" type="button">登出</button>
+    </header>
+
+    <main id="owner-main" class="owner-main section-wrap">
+      <section class="owner-hero">
+        <div><span class="eyebrow">STALLHOLDER DASHBOARD</span><h1>訂單、庫存與營業數字，一頁掌握。</h1><p>自動同步新訂單、批次更新處理狀態、追蹤低庫存，並可匯出營運紀錄。</p></div>
+        <div class="owner-link-card">
+          <span>顧客訂購連結</span><code id="customer-link">customer.html</code>
+          <div class="owner-link-actions"><button id="copy-customer-link" type="button" class="secondary-button">複製連結</button><a class="secondary-button" href="./customer.html" target="_blank" rel="noopener">開啟顧客端</a></div>
+        </div>
+      </section>
+
+      <section id="overview" class="owner-section" aria-labelledby="overview-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">BUSINESS OVERVIEW</span><h2 id="overview-title">營運總覽</h2><p id="last-synced">尚未同步</p></div>
+          <div class="owner-actions"><button id="enable-notifications" type="button" class="secondary-button">開啟新訂單通知</button><button id="refresh-orders" type="button" class="secondary-button">立即同步</button></div>
+        </div>
+        <div class="owner-overview-stats">
+          <article><span>今日訂單</span><strong id="overview-today">0</strong><small id="overview-today-amount">NT$0</small></article>
+          <article><span>待確認</span><strong id="overview-pending">0</strong><small>需要優先處理</small></article>
+          <article><span>處理中</span><strong id="overview-processing">0</strong><small>已確認至可取貨</small></article>
+          <article><span>已完成</span><strong id="overview-completed">0</strong><small id="overview-completion-rate">完成率 0%</small></article>
+          <article><span>完成營業額</span><strong id="overview-revenue">NT$0</strong><small>不含取消訂單</small></article>
+          <article><span>平均客單</span><strong id="overview-average">NT$0</strong><small id="overview-total">共 0 張訂單</small></article>
+        </div>
+        <div class="owner-insights">
+          <article class="insight-card insight-card--wide">
+            <div class="insight-card__heading"><div><span class="eyebrow">7-DAY SALES</span><h3>近 7 日完成營業額</h3></div><strong id="week-revenue">NT$0</strong></div>
+            <div id="sales-chart" class="sales-chart" aria-label="近七日營業額圖表"></div>
+          </article>
+          <article class="insight-card"><span class="eyebrow">TOP PRODUCTS</span><h3>熱銷商品</h3><div id="top-products" class="rank-list"></div></article>
+          <article class="insight-card"><span class="eyebrow">LOW STOCK</span><h3>低庫存提醒</h3><div id="low-stock-list" class="alert-list"></div><a href="#settings" class="text-link">前往補庫存 →</a></article>
+        </div>
+      </section>
+
+      <section id="orders" class="owner-section" aria-labelledby="orders-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">ALL CUSTOMER ORDERS</span><h2 id="orders-title">訂單管理</h2><p>搜尋、篩選、批次處理，並保存攤主內部備註。</p></div>
+          <div class="owner-actions"><button id="export-orders" type="button" class="secondary-button">匯出 CSV</button><button id="clear-order-filters" type="button" class="secondary-button">清除篩選</button></div>
+        </div>
+        <div class="order-toolbar">
+          <label class="toolbar-search">搜尋<input id="order-search" type="search" placeholder="顧客、聯絡方式、訂單編號或商品" /></label>
+          <label>狀態<select id="order-status-filter"><option value="all">全部狀態</option><option value="pending">待確認</option><option value="confirmed">已確認</option><option value="preparing">備貨中</option><option value="ready">可取貨</option><option value="completed">已完成</option><option value="cancelled">已取消</option></select></label>
+          <label>期間<select id="order-range-filter"><option value="all">全部期間</option><option value="today">今天</option><option value="7">近 7 天</option><option value="30">近 30 天</option></select></label>
+          <label>指定日期<input id="order-date-filter" type="date" /></label>
+          <label>排序<select id="order-sort"><option value="newest">最新優先</option><option value="oldest">最舊優先</option><option value="total-desc">金額高到低</option><option value="pickup">取貨時段</option></select></label>
+        </div>
+        <div class="bulk-bar">
+          <label class="bulk-select-all"><input id="select-all-orders" type="checkbox" />選取目前顯示</label>
+          <strong id="selected-order-count">已選 0 張</strong>
+          <label>批次狀態<select id="bulk-order-status"><option value="">選擇狀態</option><option value="confirmed">已確認</option><option value="preparing">備貨中</option><option value="ready">可取貨</option><option value="completed">已完成</option><option value="cancelled">已取消</option></select></label>
+          <button id="apply-bulk-status" class="primary-button" type="button" disabled>套用到已選訂單</button>
+        </div>
+        <p id="order-result-count" class="result-count">顯示 0 張訂單</p>
+        <div id="owner-orders" class="owner-orders owner-orders--overview" aria-live="polite"></div>
+      </section>
+
+      <section id="settings" class="owner-section" aria-labelledby="settings-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">MARKET & INVENTORY</span><h2 id="settings-title">商品、庫存與公告</h2><p>儲存後，顧客端重新整理即可取得最新售價、庫存與上下架狀態。</p></div>
+          <div class="owner-actions"><button id="reset-settings" type="button" class="secondary-button">恢復預設</button><button id="save-settings" type="button" class="primary-button">同步全部設定</button></div>
+        </div>
+        <label class="announcement-field"><span>首頁攤主公告</span><textarea id="announcement-input" maxlength="120" rows="3" placeholder="例如：今天 17:00 前下單，晚上可取貨。"></textarea><small><span id="announcement-count">0</span>/120 字</small></label>
+        <div class="owner-stats"><article><span>商品總數</span><strong id="stat-total">40</strong></article><article><span>目前上架</span><strong id="stat-enabled">40</strong></article><article><span>總庫存</span><strong id="stat-stock">0</strong></article><article><span>低庫存</span><strong id="stat-low-stock">0</strong></article><article><span>訂單總數</span><strong id="stat-orders">0</strong></article></div>
+        <div class="product-toolbar">
+          <label class="toolbar-search">搜尋商品<input id="product-search" type="search" placeholder="名稱、產地或卡片名稱" /></label>
+          <label>類別<select id="product-category-filter"><option value="all">全部類別</option><option value="vegetable">蔬菜</option><option value="fruit">水果</option></select></label>
+          <label>狀態<select id="product-status-filter"><option value="all">全部狀態</option><option value="enabled">已上架</option><option value="disabled">已下架</option><option value="low">低庫存（≤ 5）</option><option value="out">售罄</option></select></label>
+          <button id="select-filtered-products" class="secondary-button" type="button">選取篩選結果</button>
+        </div>
+        <div class="bulk-bar product-bulk-bar">
+          <strong id="selected-product-count">已選 0 項</strong>
+          <button type="button" class="secondary-button" data-product-bulk="enable">批次上架</button>
+          <button type="button" class="secondary-button" data-product-bulk="disable">批次下架</button>
+          <button type="button" class="secondary-button" data-product-bulk="add10">庫存 +10</button>
+          <button type="button" class="secondary-button" data-product-bulk="clear">取消選取</button>
+        </div>
+        <p id="product-result-count" class="result-count">顯示 40 項商品</p>
+        <div id="owner-product-list" class="owner-product-list"></div>
+        <div class="sticky-save"><span id="save-status">尚未修改</span><button id="sticky-save-button" type="button" class="primary-button">同步設定</button></div>
+      </section>
+
+      <section id="system" class="owner-section" aria-labelledby="system-title">
+        <div class="section-heading"><div><span class="eyebrow">SYSTEM & SECURITY</span><h2 id="system-title">系統設定</h2><p>管理同步頻率、通知與雲端連線狀態。</p></div></div>
+        <div class="system-grid">
+          <article class="system-card"><h3>自動同步</h3><label class="switch-row"><input id="auto-refresh-toggle" type="checkbox" checked /><span>每 <strong id="refresh-interval-label">10</strong> 秒檢查新訂單</span></label><p>切回此頁或恢復網路時，也會立即同步。</p></article>
+          <article class="system-card"><h3>瀏覽器通知</h3><p id="notification-status">尚未開啟通知。</p><button id="system-notification-button" type="button" class="secondary-button">設定新訂單通知</button></article>
+          <article class="system-card"><h3>雲端診斷</h3><dl class="diagnostic-list"><div><dt>運作模式</dt><dd id="diagnostic-mode">檢查中</dd></div><div><dt>資料庫</dt><dd id="diagnostic-database">檢查中</dd></div><div><dt>登入帳號</dt><dd id="diagnostic-user">—</dd></div><div><dt>最後同步</dt><dd id="diagnostic-sync">—</dd></div></dl></article>
+          <article class="system-card system-card--setup"><h3>跨裝置同步設定</h3><ol><li>建立 Supabase 專案。</li><li>重新執行最新版 <code>SUPABASE_SETUP.sql</code>。</li><li>在 Authentication 建立攤主帳號，並加入 <code>owner_accounts</code>。</li><li>設定 GitHub Variables：<code>SUPABASE_URL</code>、<code>SUPABASE_PUBLISHABLE_KEY</code>。</li></ol><p>前端只能使用 publishable key；請勿放入 secret 或 service-role key。</p></article>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="owner-toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

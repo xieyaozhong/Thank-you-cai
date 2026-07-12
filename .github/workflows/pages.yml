@@ -1,32 +1,27 @@
-name: Deploy GitHub Pages
+name: Publish GitHub Pages
 
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - "DEPLOYMENT_STATUS.json"
   workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-publish
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare static site
+      - name: Prepare and validate static site
+        env:
+          DEPLOYED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           mkdir -p _site
@@ -37,65 +32,56 @@ jobs:
           node --check _site/app.js
           node --check _site/catalog.js
           node --check _site/owner.js
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+          payload = {
+              "status": "success",
+              "commit": os.environ["DEPLOYED_SHA"],
+              "deployed_at": datetime.now(timezone.utc).isoformat(),
+              "frontend_url": "https://xieyaozhong.github.io/Thank-you-cai/",
+              "owner_url": "https://xieyaozhong.github.io/Thank-you-cai/owner.html",
+              "product_count": 28,
+          }
+          with open("_site/deployment-status.json", "w", encoding="utf-8") as file:
+              json.dump(payload, file, ensure_ascii=False, indent=2)
+              file.write("\n")
+          PY
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Verify public pages
+      - name: Publish to configured gh-pages branch
         env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          base="${PAGE_URL%/}"
+          cd _site
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin gh-pages
+
+      - name: Verify public frontend and owner page
+        run: |
+          set -euo pipefail
+          base="https://xieyaozhong.github.io/Thank-you-cai"
           verified=false
-          for attempt in $(seq 1 18); do
-            index_html="$(curl -fsSL --retry 2 --retry-delay 1 "$base/" || true)"
-            owner_html="$(curl -fsSL --retry 2 --retry-delay 1 "$base/owner.html" || true)"
-            if grep -Fq "謝謝你，菜！" <<<"$index_html" && grep -Fq "攤主頁面" <<<"$owner_html"; then
+          for attempt in $(seq 1 30); do
+            index_html="$(curl -fsSL --retry 1 --retry-delay 1 "$base/" || true)"
+            owner_html="$(curl -fsSL --retry 1 --retry-delay 1 "$base/owner.html" || true)"
+            status_json="$(curl -fsSL --retry 1 --retry-delay 1 "$base/deployment-status.json" || true)"
+            if grep -Fq "謝謝你，菜！" <<<"$index_html" \
+              && grep -Fq "攤主頁面" <<<"$owner_html" \
+              && grep -Fq "$GITHUB_SHA" <<<"$status_json"; then
               verified=true
               break
             fi
             sleep 5
           done
           test "$verified" = true
-
-      - name: Record successful deployment
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-          DEPLOYED_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          import os
-          from datetime import datetime, timezone
-
-          page_url = os.environ["PAGE_URL"].rstrip("/") + "/"
-          payload = {
-              "status": "success",
-              "commit": os.environ["DEPLOYED_SHA"],
-              "deployed_at": datetime.now(timezone.utc).isoformat(),
-              "frontend_url": page_url,
-              "owner_url": page_url + "owner.html",
-              "verified_content": ["謝謝你，菜！", "攤主頁面"],
-          }
-          with open("DEPLOYMENT_STATUS.json", "w", encoding="utf-8") as file:
-              json.dump(payload, file, ensure_ascii=False, indent=2)
-              file.write("\n")
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add DEPLOYMENT_STATUS.json
-          git commit -m "Record successful Pages deployment [skip pages]" || exit 0
-          git push
+          echo "Verified: $base/"
+          echo "Verified: $base/owner.html"

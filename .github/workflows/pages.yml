@@ -39,6 +39,10 @@ jobs:
           cat .deploy/owner-v2/owner.js.part* > _site/owner.js
           cp SUPABASE_SETUP.sql _site/SUPABASE_SETUP.sql
 
+          # Add the lightweight gacha feedback layer without changing draw odds or order logic.
+          cat .deploy/gacha-feedback/bundle.b64.part* | base64 --decode > /tmp/gacha-feedback.tar.gz
+          tar -xzf /tmp/gacha-feedback.tar.gz -C _site
+
           rm -f _site/catalog-extra.js
           python - <<'PY'
           from pathlib import Path
@@ -46,6 +50,20 @@ jobs:
           owner_html = owner_path.read_text(encoding='utf-8')
           owner_html = owner_html.replace('<script src="./catalog-extra.js" defer></script>', '')
           owner_path.write_text(owner_html, encoding='utf-8')
+
+          customer_path = Path('_site/customer.html')
+          customer_html = customer_path.read_text(encoding='utf-8')
+          if 'gacha-feedback.css' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<link rel="stylesheet" href="./styles.css" />',
+                  '<link rel="stylesheet" href="./styles.css" />\n    <link rel="stylesheet" href="./gacha-feedback.css" />',
+              )
+          if 'gacha-feedback.js' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<script src="./app.js" defer></script>',
+                  '<script src="./app.js" defer></script>\n    <script src="./gacha-feedback.js" defer></script>',
+              )
+          customer_path.write_text(customer_html, encoding='utf-8')
           PY
 
           test -f _site/index.html
@@ -54,10 +72,18 @@ jobs:
           test -f _site/cloud-config.js
           test -f _site/cloud-client.js
           test -f _site/SUPABASE_SETUP.sql
+          test -f _site/gacha-feedback.js
+          test -f _site/gacha-feedback.css
+          grep -Fq "gacha-feedback.css" _site/customer.html
+          grep -Fq "gacha-feedback.js" _site/customer.html
+          grep -Fq "gacha-stage-lamps" _site/gacha-feedback.js
+          grep -Fq "navigator.vibrate" _site/gacha-feedback.js
+          grep -Fq "prefers-reduced-motion" _site/gacha-feedback.css
           grep -Fq "營運總覽" _site/owner.html
           grep -Fq "owner_note" _site/SUPABASE_SETUP.sql
           grep -Fq "updateOrdersStatus" _site/cloud-client.js
           node --check _site/app.js
+          node --check _site/gacha-feedback.js
           node --check _site/catalog.js
           node --check _site/cloud-client.js
           node --check _site/owner.js
@@ -92,6 +118,16 @@ jobs:
               'cloud_configured': cloud_configured,
               'architecture': 'separate-customer-owner',
               'owner_dashboard': 'v2',
+              'gacha_feedback': 'v2',
+              'gacha_features': [
+                  'phase-lamps',
+                  'press-feedback',
+                  'web-audio',
+                  'haptics',
+                  'pixel-particles',
+                  'rarity-reveal',
+                  'reduced-motion',
+              ],
               'owner_features': [
                   'business-overview',
                   'bulk-order-status',
@@ -133,7 +169,9 @@ jobs:
             status_json="$(curl -fsSL --retry 1 --retry-delay 1 "$base/deployment-status.json" || true)"
             if grep -Fq "顧客端" <<<"$portal" \
               && grep -Fq "CUSTOMER CHECKOUT" <<<"$customer" \
+              && grep -Fq "gacha-feedback.js" <<<"$customer" \
               && grep -Fq "營運總覽" <<<"$owner" \
+              && grep -Fq '"gacha_feedback": "v2"' <<<"$status_json" \
               && grep -Fq '"owner_dashboard": "v2"' <<<"$status_json" \
               && grep -Fq "$GITHUB_SHA" <<<"$status_json"; then
               verified=true
@@ -143,5 +181,5 @@ jobs:
           done
           test "$verified" = true
           echo "Verified portal: $base/"
-          echo "Verified customer: $base/customer.html"
+          echo "Verified customer gacha feedback v2: $base/customer.html"
           echo "Verified owner dashboard v2: $base/owner.html"

@@ -1,7 +1,8 @@
 {
   "status": "success",
-  "commit": "526f55bb6ff02014b1e52aa1ba2a4d4a1bab3eac",
-  "deployed_at": "2026-07-12T09:17:18.486162+00:00",
+  "commit": "2d3e42eec5eb37ecb1ce9fd27f101ed8b8c5c605",
+  "direct_deploy_commit": "d982315f8ee59c5d233a05de3d6dfb29347e5ab8",
+  "deployed_at": "2026-07-12T12:04:00+00:00",
   "frontend_url": "https://xieyaozhong.github.io/Thank-you-cai/customer.html",
   "owner_url": "https://xieyaozhong.github.io/Thank-you-cai/owner.html",
   "product_count": 40,
@@ -10,6 +11,15 @@
   "owner_dashboard": "v2",
   "gacha_feedback": "v2",
   "card_visual": "v2",
+  "card_effects": "v3",
+  "card_effect_features": [
+    "forty-product-effect-profiles",
+    "product-card-effects",
+    "collection-card-effects",
+    "gacha-reveal-effects",
+    "per-card-color-palettes",
+    "reduced-motion"
+  ],
   "card_visual_features": [
     "distinct-sprite-models",
     "fruit-vegetable-backgrounds",

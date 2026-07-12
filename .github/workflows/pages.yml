@@ -31,6 +31,14 @@ jobs:
           unzip -q /tmp/site.zip -d _site
           cat .deploy/cloud-overlay.zip.b64.part* | base64 --decode > /tmp/cloud-overlay.zip
           unzip -qo /tmp/cloud-overlay.zip -d _site
+          rm -f _site/catalog-extra.js
+          python - <<'PY'
+          from pathlib import Path
+          owner_path = Path('_site/owner.html')
+          owner_html = owner_path.read_text(encoding='utf-8')
+          owner_html = owner_html.replace('    <script src="./catalog-extra.js" defer></script>\n', '')
+          owner_path.write_text(owner_html, encoding='utf-8')
+          PY
           test -f _site/index.html
           test -f _site/customer.html
           test -f _site/owner.html

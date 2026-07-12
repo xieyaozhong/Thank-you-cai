@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#183427" />
+  <meta name="description" content="謝謝你，菜！顧客端與攤主端入口。" />
+  <title>謝謝你，菜！｜選擇入口</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./portal.css" />
+</head>
+<body class="portal-page">
+  <main class="portal-shell">
+    <section class="portal-hero">
+      <span class="portal-mark" aria-hidden="true">菜</span>
+      <span class="eyebrow">THANK YOU, VEGGIES!</span>
+      <h1>謝謝你，菜！</h1>
+      <p>顧客下單與攤主管理已分成兩個獨立入口。</p>
+    </section>
+    <section class="portal-grid" aria-label="選擇使用端">
+      <a class="portal-card portal-card--customer" href="./customer.html">
+        <span class="portal-icon" aria-hidden="true">籃</span>
+        <small>CUSTOMER</small>
+        <h2>顧客端</h2>
+        <p>瀏覽本週蔬果、加入菜籃、送出訂單並查看同步狀態。</p>
+        <strong>進入顧客菜攤 →</strong>
+      </a>
+      <a class="portal-card portal-card--owner" href="./owner.html">
+        <span class="portal-icon" aria-hidden="true">帳</span>
+        <small>STALLHOLDER</small>
+        <h2>攤主端</h2>
+        <p>登入後查看所有顧客訂單、營業總覽、訂單明細與處理狀態。</p>
+        <strong>進入攤主工作台 →</strong>
+      </a>
+    </section>
+    <footer>顧客資料與攤主權限由雲端資料庫的 Row Level Security 分開保護。</footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "status": "success",
+  "commit": "526f55bb6ff02014b1e52aa1ba2a4d4a1bab3eac",
+  "deployed_at": "2026-07-12T09:17:18.486162+00:00",
+  "frontend_url": "https://xieyaozhong.github.io/Thank-you-cai/customer.html",
+  "owner_url": "https://xieyaozhong.github.io/Thank-you-cai/owner.html",
+  "product_count": 40,
+  "cloud_configured": false,
+  "architecture": "separate-customer-owner",
+  "owner_dashboard": "v2",
+  "gacha_feedback": "v2",
+  "card_visual": "v2",
+  "card_visual_features": [
+    "distinct-sprite-models",
+    "fruit-vegetable-backgrounds",
+    "category-badges",
+    "card-nameplates",
+    "layered-pixel-depth",
+    "responsive-card-art"
+  ],
+  "gacha_features": [
+    "phase-lamps",
+    "press-feedback",
+    "web-audio",
+    "haptics",
+    "pixel-particles",
+    "rarity-reveal",
+    "reduced-motion"
+  ],
+  "owner_features": [
+    "business-overview",
+    "bulk-order-status",
+    "csv-export",
+    "owner-notes",
+    "priority-orders",
+    "inventory-alerts",
+    "bulk-inventory-actions",
+    "browser-notifications"
+  ]
+}

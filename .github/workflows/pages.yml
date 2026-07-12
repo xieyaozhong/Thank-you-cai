@@ -36,7 +36,7 @@ jobs:
           from pathlib import Path
           owner_path = Path('_site/owner.html')
           owner_html = owner_path.read_text(encoding='utf-8')
-          owner_html = owner_html.replace('    <script src="./catalog-extra.js" defer></script>\n', '')
+          owner_html = owner_html.replace('<script src="./catalog-extra.js" defer></script>', '')
           owner_path.write_text(owner_html, encoding='utf-8')
           PY
           test -f _site/index.html

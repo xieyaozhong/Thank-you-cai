@@ -86,7 +86,23 @@
     document.querySelectorAll(".product-card").forEach(enhanceCard);
   }
 
+  function loadCardEffects() {
+    if (!document.querySelector('link[href$="card-effects.css"]')) {
+      const style = document.createElement("link");
+      style.rel = "stylesheet";
+      style.href = "./card-effects.css";
+      document.head.append(style);
+    }
+    if (!document.querySelector('script[src$="card-effects.js"]')) {
+      const script = document.createElement("script");
+      script.src = "./card-effects.js";
+      script.defer = true;
+      document.head.append(script);
+    }
+  }
+
   function start() {
+    loadCardEffects();
     enhanceAll();
     const grid = document.querySelector("#product-grid");
     if (!grid) return;

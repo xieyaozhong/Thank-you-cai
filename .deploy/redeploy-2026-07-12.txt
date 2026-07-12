@@ -1,0 +1,3 @@
+Direct deployment requested at 2026-07-12T06:20:42Z.
+Source package SHA-256: 3d8312a3807dc66d9123b48a2ff41a97d8f18cb10a8ffe3b1a40a58150520dbd
+Architecture: separate customer and owner portals with cloud-order support.

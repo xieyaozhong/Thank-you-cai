@@ -1,4 +1,4 @@
-name: Pages deployment check
+name: Pages public verification
 
 on:
   pull_request:
@@ -6,24 +6,19 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages-pr-check
+  group: pages-public-check
   cancel-in-progress: true
 
 jobs:
-  deploy-and-check:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare static site
+      - name: Validate deployment bundle
         run: |
           set -euo pipefail
           mkdir -p _site
@@ -35,28 +30,19 @@ jobs:
           node --check _site/catalog.js
           node --check _site/owner.js
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       - name: Verify public pages
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           set -euo pipefail
-          base="${PAGE_URL%/}"
-          index_html="$(curl -fsSL --retry 8 --retry-delay 3 "$base/")"
-          owner_html="$(curl -fsSL --retry 8 --retry-delay 3 "$base/owner.html")"
-          grep -Fq "謝謝你，菜！" <<<"$index_html"
-          grep -Fq "攤主頁面" <<<"$owner_html"
+          base="https://xieyaozhong.github.io/Thank-you-cai"
+          verified=false
+          for attempt in $(seq 1 24); do
+            index_html="$(curl -fsSL --retry 2 --retry-delay 2 "$base/" || true)"
+            owner_html="$(curl -fsSL --retry 2 --retry-delay 2 "$base/owner.html" || true)"
+            if grep -Fq "謝謝你，菜！" <<<"$index_html" && grep -Fq "攤主頁面" <<<"$owner_html"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = true
           printf 'Verified frontend: %s/\nVerified owner: %s/owner.html\n' "$base" "$base"

@@ -1,0 +1,201 @@
+(() => {
+  "use strict";
+
+  const catalog = window.THANK_YOU_CAI_CATALOG;
+  const cloud = window.THANK_YOU_CAI_CLOUD_CLIENT;
+  if (!catalog) throw new Error("找不到蔬果目錄");
+
+  const CUSTOMER_STORAGE_KEY = "thank-you-cai-github-pages-v1";
+  const OWNER_SETTINGS_KEY = "thank-you-cai-owner-settings-v1";
+  const OWNER_ORDER_META_KEY = "thank-you-cai-owner-order-meta-v1";
+  const OWNER_PREFERENCES_KEY = "thank-you-cai-owner-preferences-v1";
+  const LOW_STOCK_THRESHOLD = 5;
+  const statusNames = { pending: "待確認", confirmed: "已確認", preparing: "備貨中", ready: "可取貨", completed: "已完成", cancelled: "已取消" };
+  const statusSteps = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
+  const gradeNames = { S: "閃亮特選", A: "新鮮優選", B: "實惠好味", C: "惜食即享" };
+
+  let orders = [];
+  let dirty = false;
+  let localMode = false;
+  let sessionEmail = "";
+  let toastTimer = 0;
+  let refreshTimer = 0;
+  let refreshInProgress = false;
+  let knownOrderCodes = new Set();
+  let hasLoadedOrders = false;
+  const selectedOrderIds = new Set();
+  const selectedProductIds = new Set();
+
+  const $ = (selector) => document.querySelector(selector);
+  const els = {
+    auth: $("#owner-auth"), app: $("#owner-app"), loginForm: $("#owner-login-form"), loginButton: $("#owner-login-button"), logout: $("#owner-logout"), resetPassword: $("#owner-reset-password"), setupHelp: $("#cloud-setup-help"), localPreview: $("#owner-local-preview"), authDescription: $("#auth-description"),
+    cloudTitle: $("#owner-cloud-title"), cloudStatus: $("#owner-cloud-status"), modeBadge: $("#owner-mode-badge"),
+    list: $("#owner-product-list"), announcement: $("#announcement-input"), announcementCount: $("#announcement-count"), save: $("#save-settings"), stickySave: $("#sticky-save-button"), reset: $("#reset-settings"), saveStatus: $("#save-status"),
+    productSearch: $("#product-search"), productCategory: $("#product-category-filter"), productStatus: $("#product-status-filter"), productResultCount: $("#product-result-count"), selectFilteredProducts: $("#select-filtered-products"), selectedProductCount: $("#selected-product-count"),
+    orders: $("#owner-orders"), refreshOrders: $("#refresh-orders"), search: $("#order-search"), statusFilter: $("#order-status-filter"), rangeFilter: $("#order-range-filter"), dateFilter: $("#order-date-filter"), sort: $("#order-sort"), clearOrderFilters: $("#clear-order-filters"), exportOrders: $("#export-orders"), lastSynced: $("#last-synced"), orderResultCount: $("#order-result-count"),
+    selectAllOrders: $("#select-all-orders"), selectedOrderCount: $("#selected-order-count"), bulkOrderStatus: $("#bulk-order-status"), applyBulkStatus: $("#apply-bulk-status"),
+    overviewToday: $("#overview-today"), overviewTodayAmount: $("#overview-today-amount"), overviewPending: $("#overview-pending"), overviewProcessing: $("#overview-processing"), overviewCompleted: $("#overview-completed"), overviewCompletionRate: $("#overview-completion-rate"), overviewRevenue: $("#overview-revenue"), overviewAverage: $("#overview-average"), overviewTotal: $("#overview-total"), weekRevenue: $("#week-revenue"), salesChart: $("#sales-chart"), topProducts: $("#top-products"), lowStockList: $("#low-stock-list"),
+    statTotal: $("#stat-total"), statEnabled: $("#stat-enabled"), statStock: $("#stat-stock"), statLowStock: $("#stat-low-stock"), statOrders: $("#stat-orders"), customerLink: $("#customer-link"), copyCustomerLink: $("#copy-customer-link"), toast: $("#owner-toast"),
+    enableNotifications: $("#enable-notifications"), systemNotificationButton: $("#system-notification-button"), notificationStatus: $("#notification-status"), autoRefreshToggle: $("#auto-refresh-toggle"), refreshIntervalLabel: $("#refresh-interval-label"), diagnosticMode: $("#diagnostic-mode"), diagnosticDatabase: $("#diagnostic-database"), diagnosticUser: $("#diagnostic-user"), diagnosticSync: $("#diagnostic-sync"),
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+  }
+
+  function money(value) {
+    return new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 }).format(Number(value) || 0);
+  }
+
+  function formatDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "時間不明" : new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+  }
+
+  function formatTime(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("zh-TW", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(date);
+  }
+
+  function localDateKey(value = new Date()) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function renderPixelSprite(key, label) {
+    const sprite = catalog.sprites[key];
+    if (!sprite) return '<span class="brand__mark" aria-hidden="true">菜</span>';
+    return `<span class="pixel-sprite" role="img" aria-label="${escapeHtml(label)}">${sprite.pixels.flatMap((row) => [...row].map((pixel) => `<i${sprite.palette[pixel] ? ` style="background:${sprite.palette[pixel]}"` : ""}></i>`)).join("")}</span>`;
+  }
+
+  function showToast(message, isError = false) {
+    clearTimeout(toastTimer);
+    els.toast.textContent = message;
+    els.toast.style.background = isError ? "#9e342d" : "";
+    els.toast.classList.add("is-visible");
+    toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 3600);
+  }
+
+  function setCloudStatus(message, ok = false) {
+    els.cloudStatus.textContent = message;
+    els.cloudTitle.textContent = ok ? "雲端同步已連線" : "攤主工作台";
+    els.modeBadge.textContent = localMode ? "本機預覽" : (ok ? "雲端模式" : "連線中");
+    els.modeBadge.classList.toggle("is-cloud", ok && !localMode);
+    els.modeBadge.classList.toggle("is-local", localMode);
+  }
+
+  function setDirty(value = true) {
+    dirty = value;
+    els.saveStatus.textContent = value ? (localMode ? "有尚未儲存的本機修改" : "有尚未同步的修改") : (localMode ? "設定已保存在本機" : "設定已同步");
+  }
+
+  function loadJson(storage, key, fallback) {
+    try {
+      const value = JSON.parse(storage.getItem(key) || "null");
+      return value && typeof value === "object" ? value : fallback;
+    } catch { return fallback; }
+  }
+
+  function loadPreferences() {
+    return { autoRefresh: true, ...loadJson(localStorage, OWNER_PREFERENCES_KEY, {}) };
+  }
+
+  function savePreferences(patch) {
+    const next = { ...loadPreferences(), ...patch };
+    localStorage.setItem(OWNER_PREFERENCES_KEY, JSON.stringify(next));
+    return next;
+  }
+
+  function loadLocalSettings() {
+    return loadJson(localStorage, OWNER_SETTINGS_KEY, { announcement: "", products: {} });
+  }
+
+  function saveLocalSettings(settings) {
+    localStorage.setItem(OWNER_SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function loadLocalOrderMeta() {
+    return loadJson(localStorage, OWNER_ORDER_META_KEY, {});
+  }
+
+  function saveLocalOrderMeta(meta) {
+    localStorage.setItem(OWNER_ORDER_META_KEY, JSON.stringify(meta));
+  }
+
+  function orderKey(order) {
+    return String(order.id || order.order_code || "");
+  }
+
+  function loadLocalOrders() {
+    const state = loadJson(localStorage, CUSTOMER_STORAGE_KEY, { orders: [] });
+    const meta = loadLocalOrderMeta();
+    return (Array.isArray(state.orders) ? state.orders : []).map((order, index) => {
+      const code = String(order.id || `LOCAL-${index + 1}`);
+      const ownerMeta = meta[code] || {};
+      return {
+        id: code,
+        order_code: code,
+        created_at: order.createdAt || new Date(0).toISOString(),
+        updated_at: ownerMeta.updatedAt || order.createdAt || new Date(0).toISOString(),
+        customer_name: order.nickname || "小菜友",
+        contact: order.contact || "未提供",
+        pickup_slot: order.slot || "未選擇",
+        note: order.note || "",
+        items: Array.isArray(order.lines) ? order.lines : [],
+        subtotal: Number(order.subtotal) || 0,
+        delivery: Number(order.delivery) || 0,
+        total: Number(order.total) || 0,
+        status: statusNames[order.status] ? order.status : "pending",
+        owner_note: ownerMeta.ownerNote || "",
+        priority: Boolean(ownerMeta.priority),
+        _local: true,
+      };
+    });
+  }
+
+  function updateLocalOrderStatus(code, status) {
+    const state = loadJson(localStorage, CUSTOMER_STORAGE_KEY, { cart: {}, orders: [], points: 0, collection: {} });
+    if (!Array.isArray(state.orders)) state.orders = [];
+    const target = state.orders.find((order) => String(order.id) === String(code));
+    if (!target) throw new Error("找不到本機訂單。");
+    target.status = status;
+    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function updateLocalOrderMeta(code, patch) {
+    const meta = loadLocalOrderMeta();
+    meta[code] = { ...(meta[code] || {}), ...patch, updatedAt: new Date().toISOString() };
+    saveLocalOrderMeta(meta);
+  }
+
+  function productRowValues(row) {
+    return {
+      id: row.dataset.productId,
+      price: Math.max(0, Math.round(Number(row.querySelector('[data-field="price"]').value) || 0)),
+      stock: Math.max(0, Math.round(Number(row.querySelector('[data-field="stock"]').value) || 0)),
+      enabled: row.querySelector('[data-field="enabled"]').checked,
+    };
+  }
+
+  function renderProducts(settings = loadLocalSettings()) {
+    const overrides = settings.products || {};
+    els.announcement.value = String(settings.announcement || "").slice(0, 120);
+    els.announcementCount.textContent = els.announcement.value.length;
+    selectedProductIds.clear();
+    els.list.innerHTML = catalog.products.map((product) => {
+      const override = overrides[product.id] || {};
+      const price = Number.isFinite(Number(override.price)) ? Math.max(0, Math.round(Number(override.price))) : product.price;
+      const stock = Number.isFinite(Number(override.stock)) ? Math.max(0, Math.round(Number(override.stock))) : product.stock;
+      const enabled = override.enabled !== false;
+      const low = enabled && stock <= LOW_STOCK_THRESHOLD;
+      return `<article class="owner-product-row${enabled ? "" : " is-disabled"}${low ? " is-low-stock" : ""}" data-product-id="${escapeHtml(product.id)}" data-category="${escapeHtml(product.category)}" data-search="${escapeHtml(`${product.name} ${product.cardName} ${product.origin}`.toLowerCase())}">
+        <input class="product-select" type="checkbox" aria-label="選取 ${escapeHtml(product.name)}" />
+        <div class="owner-product-ident">${renderPixelSprite(product.sprite, product.name)}<div><strong>${escapeHtml(product.name)}</strong><small>${product.grade} 級・${escapeHtml(gradeNames[product.grade])}・${escapeHtml(product.origin)}</small>${low ? `<span class="stock-warning">${stock === 0 ? "已售罄" : `低庫存 ${stock}`}</span>` : ""}</div></div>
+        <label>售價（NT$）<input data-field="price" type="number" inputmode="numeric" min="0" max="99999" value="${price}" /></label>
+        <label>庫存<div class="stock-control"><button type="button" data-stock-delta="-1" aria-label="庫存減一">−</button><input data-field="stock" type="number" inputmode="numeric" min="0" max="9999" value="${stock}" /><button type="button" data-stock-delta="1" aria-label="庫存加一">＋</button></div></label>
+        <label class="owner-toggle"><input data-field="enabled" type="checkbox" ${enabled ? "checked" : ""}/><span>${enabled ? "已上架" : "已下架"}</span></label>
+      </article>`;
+    }).join("");
+    filterProducts();
+    upd

@@ -47,6 +47,10 @@ jobs:
           cat .deploy/card-visual/bundle.b64.part* | base64 --decode > /tmp/card-visual-upgrade.tar.gz
           tar -xzf /tmp/card-visual-upgrade.tar.gz -C _site
 
+          # Add per-card effects after the visual upgrade; it also enhances collection and gacha reveal views.
+          cat .deploy/card-effects/bundle.b64.part* | base64 --decode > /tmp/card-effects.tar.gz
+          tar -xzf /tmp/card-effects.tar.gz -C _site
+
           rm -f _site/catalog-extra.js
           python - <<'PY'
           from pathlib import Path
@@ -67,6 +71,11 @@ jobs:
                   '<link rel="stylesheet" href="./gacha-feedback.css" />',
                   '<link rel="stylesheet" href="./gacha-feedback.css" />\n    <link rel="stylesheet" href="./card-visual-upgrade.css" />',
               )
+          if 'card-effects.css' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<link rel="stylesheet" href="./card-visual-upgrade.css" />',
+                  '<link rel="stylesheet" href="./card-visual-upgrade.css" />\n    <link rel="stylesheet" href="./card-effects.css" />',
+              )
           if 'card-visual-upgrade.js' not in customer_html:
               customer_html = customer_html.replace(
                   '<script src="./catalog.js" defer></script>',
@@ -76,6 +85,11 @@ jobs:
               customer_html = customer_html.replace(
                   '<script src="./app.js" defer></script>',
                   '<script src="./app.js" defer></script>\n    <script src="./gacha-feedback.js" defer></script>',
+              )
+          if 'card-effects.js' not in customer_html:
+              customer_html = customer_html.replace(
+                  '<script src="./gacha-feedback.js" defer></script>',
+                  '<script src="./gacha-feedback.js" defer></script>\n    <script src="./card-effects.js" defer></script>',
               )
           customer_path.write_text(customer_html, encoding='utf-8')
           PY
@@ -90,21 +104,28 @@ jobs:
           test -f _site/gacha-feedback.css
           test -f _site/card-visual-upgrade.js
           test -f _site/card-visual-upgrade.css
+          test -f _site/card-effects.js
+          test -f _site/card-effects.css
           grep -Fq "gacha-feedback.css" _site/customer.html
           grep -Fq "gacha-feedback.js" _site/customer.html
           grep -Fq "card-visual-upgrade.css" _site/customer.html
           grep -Fq "card-visual-upgrade.js" _site/customer.html
+          grep -Fq "card-effects.css" _site/customer.html
+          grep -Fq "card-effects.js" _site/customer.html
           grep -Fq "gacha-stage-lamps" _site/gacha-feedback.js
           grep -Fq "navigator.vibrate" _site/gacha-feedback.js
           grep -Fq "product-card__category-chip" _site/card-visual-upgrade.js
           grep -Fq "upgradedSprites" _site/card-visual-upgrade.js
-          grep -Fq "prefers-reduced-motion" _site/card-visual-upgrade.css
+          grep -Fq "cauliflower-a" _site/card-effects.js
+          grep -Fq "gacha-card-special" _site/card-effects.css
+          grep -Fq "prefers-reduced-motion" _site/card-effects.css
           grep -Fq "營運總覽" _site/owner.html
           grep -Fq "owner_note" _site/SUPABASE_SETUP.sql
           grep -Fq "updateOrdersStatus" _site/cloud-client.js
           node --check _site/app.js
           node --check _site/gacha-feedback.js
           node --check _site/card-visual-upgrade.js
+          node --check _site/card-effects.js
           node --check _site/catalog.js
           node --check _site/cloud-client.js
           node --check _site/owner.js
@@ -143,6 +164,15 @@ jobs:
               'owner_dashboard': 'v2',
               'gacha_feedback': 'v2',
               'card_visual': 'v2',
+              'card_effects': 'v3',
+              'card_effect_features': [
+                  'forty-product-effect-profiles',
+                  'product-card-effects',
+                  'collection-card-effects',
+                  'gacha-reveal-effects',
+                  'per-card-color-palettes',
+                  'reduced-motion',
+              ],
               'card_visual_features': [
                   'distinct-sprite-models',
                   'fruit-vegetable-backgrounds',
@@ -203,7 +233,9 @@ jobs:
               && grep -Fq "CUSTOMER CHECKOUT" <<<"$customer" \
               && grep -Fq "gacha-feedback.js" <<<"$customer" \
               && grep -Fq "card-visual-upgrade.js" <<<"$customer" \
+              && grep -Fq "card-effects.js" <<<"$customer" \
               && grep -Fq "營運總覽" <<<"$owner" \
+              && grep -Fq '"card_effects": "v3"' <<<"$status_json" \
               && grep -Fq '"card_visual": "v2"' <<<"$status_json" \
               && grep -Fq '"gacha_feedback": "v2"' <<<"$status_json" \
               && grep -Fq '"owner_dashboard": "v2"' <<<"$status_json" \
@@ -215,6 +247,7 @@ jobs:
           done
           test "$verified" = true
           echo "Verified portal: $base/"
+          echo "Verified customer card effects v3: $base/customer.html"
           echo "Verified customer card visual v2: $base/customer.html"
           echo "Verified customer gacha feedback v2: $base/customer.html"
           echo "Verified owner dashboard v2: $base/owner.html"

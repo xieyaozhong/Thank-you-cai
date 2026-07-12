@@ -24,6 +24,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare static site
+        run: |
+          mkdir -p _site
+          cat .deploy/site.zip.b64.part* | base64 --decode > /tmp/site.zip
+          unzip -q /tmp/site.zip -d _site
+          test -f _site/index.html
+          test -f _site/owner.html
+          node --check _site/app.js
+          node --check _site/catalog.js
+          node --check _site/owner.js
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
@@ -32,7 +43,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

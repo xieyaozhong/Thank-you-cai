@@ -4,6 +4,7 @@
   const config = window.THANK_YOU_CAI_CLOUD || {};
   const SESSION_KEY = "thank-you-cai-owner-session-v2";
   const LEGACY_SESSION_KEY = "thank-you-cai-owner-session-v1";
+  const APPROVED_OWNER_EMAIL = "handsomeboy784@gmail.com";
   const cleanUrl = String(config.url || "").replace(/\/$/, "");
   const key = String(config.publishableKey || "");
   const storeId = String(config.storeId || "thank-you-cai");
@@ -74,6 +75,21 @@
       body: JSON.stringify({ email: String(email).trim(), password: String(password) }),
     });
     return saveSession(payload, remember);
+  }
+
+  async function signUpOwner(email, password, redirectTo) {
+    const address = String(email || "").trim().toLowerCase();
+    if (address !== APPROVED_OWNER_EMAIL) throw new Error("這個信箱不在核准攤主名單中。");
+    if (String(password || "").length < 8) throw new Error("密碼至少需要 8 碼。");
+    const query = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : "";
+    return request(`/auth/v1/signup${query}`, {
+      method: "POST",
+      body: JSON.stringify({
+        email: address,
+        password: String(password),
+        data: { requested_role: "store_owner", store_id: storeId },
+      }),
+    });
   }
 
   async function getSession() {
@@ -205,10 +221,90 @@
     }
   }
 
+  function installOwnerSignupUi() {
+    const loginForm = document.querySelector("#owner-login-form");
+    if (!loginForm || document.querySelector("#owner-account-onboarding")) return;
+    const resetButton = document.querySelector("#owner-reset-password");
+    const loginEmail = loginForm.elements.email;
+    if (loginEmail && !loginEmail.value) loginEmail.value = APPROVED_OWNER_EMAIL;
+
+    const panel = document.createElement("div");
+    panel.id = "owner-account-onboarding";
+    panel.style.marginTop = "12px";
+    panel.innerHTML = `
+      <button id="owner-show-signup" class="secondary-button primary-button--wide" type="button" aria-expanded="false">首次使用：建立攤主帳號</button>
+      <form id="owner-signup-form" hidden style="margin-top:12px;padding:14px;border:1px solid rgba(24,52,39,.14);border-radius:14px;background:rgba(255,255,255,.72)">
+        <strong>建立核准攤主帳號</strong>
+        <p style="margin:.4rem 0 .8rem;color:#587063;font-size:.88rem">此工作台只允許 ${APPROVED_OWNER_EMAIL} 取得攤主權限。請自行設定至少 8 碼的密碼。</p>
+        <label>核准信箱<input name="email" type="email" value="${APPROVED_OWNER_EMAIL}" readonly /></label>
+        <label>設定密碼<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+        <label>再次輸入密碼<input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+        <button id="owner-signup-button" class="primary-button primary-button--wide" type="submit">建立攤主帳號</button>
+        <p id="owner-signup-status" role="status" aria-live="polite" style="margin:.75rem 0 0;font-size:.86rem"></p>
+      </form>`;
+    loginForm.insertAdjacentElement("afterend", panel);
+    if (resetButton) panel.insertAdjacentElement("afterend", resetButton);
+
+    const toggle = panel.querySelector("#owner-show-signup");
+    const signupForm = panel.querySelector("#owner-signup-form");
+    const signupButton = panel.querySelector("#owner-signup-button");
+    const status = panel.querySelector("#owner-signup-status");
+
+    toggle.addEventListener("click", () => {
+      signupForm.hidden = !signupForm.hidden;
+      toggle.setAttribute("aria-expanded", String(!signupForm.hidden));
+      if (!signupForm.hidden) signupForm.elements.password.focus();
+    });
+
+    signupForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const password = String(signupForm.elements.password.value || "");
+      const confirmPassword = String(signupForm.elements.confirmPassword.value || "");
+      status.style.color = "#9e342d";
+      if (!configured) {
+        status.textContent = "Supabase 尚未完成設定。";
+        return;
+      }
+      if (password.length < 8) {
+        status.textContent = "密碼至少需要 8 碼。";
+        return;
+      }
+      if (password !== confirmPassword) {
+        status.textContent = "兩次輸入的密碼不一致。";
+        return;
+      }
+      signupButton.disabled = true;
+      signupButton.textContent = "建立中…";
+      try {
+        const redirect = new URL("./owner.html?signup=confirmed", location.href).href;
+        const payload = await signUpOwner(APPROVED_OWNER_EMAIL, password, redirect);
+        status.style.color = "#397247";
+        status.textContent = payload?.access_token
+          ? "攤主帳號已建立。現在可以使用上方表單登入。"
+          : "註冊資料已送出，請到信箱完成驗證後再登入。";
+        loginEmail.value = APPROVED_OWNER_EMAIL;
+        loginForm.elements.password.value = password;
+        signupForm.reset();
+      } catch (error) {
+        const message = String(error.message || error);
+        status.textContent = /already|registered|exists/i.test(message)
+          ? "這個信箱已建立帳號，請直接登入或使用忘記密碼。"
+          : message;
+      } finally {
+        signupButton.disabled = false;
+        signupButton.textContent = "建立攤主帳號";
+      }
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installOwnerSignupUi, { once: true });
+  else installOwnerSignupUi();
+
   window.THANK_YOU_CAI_CLOUD_CLIENT = Object.freeze({
-    config: Object.freeze({ ...config, storeId }),
+    config: Object.freeze({ ...config, storeId, approvedOwnerEmail: APPROVED_OWNER_EMAIL }),
     isConfigured: () => configured,
     signIn,
+    signUpOwner,
     signOut,
     getSession,
     requestPasswordReset,

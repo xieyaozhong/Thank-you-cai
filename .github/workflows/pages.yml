@@ -27,10 +27,26 @@ jobs:
           mkdir -p _site
           cat .deploy/site.zip.b64.part* | base64 --decode > /tmp/site.zip
           unzip -q /tmp/site.zip -d _site
+          cp catalog-extra.js _site/catalog-extra.js
+          python - <<'PY'
+          from pathlib import Path
+          for filename in ("index.html", "owner.html"):
+              path = Path("_site") / filename
+              text = path.read_text(encoding="utf-8")
+              text = text.replace(
+                  '<script src="./catalog.js" defer></script>',
+                  '<script src="./catalog.js" defer></script>\n    <script src="./catalog-extra.js" defer></script>',
+              )
+              text = text.replace("28 種蔬果", "40 種蔬果")
+              text = text.replace('id="stat-total">28<', 'id="stat-total">40<')
+              text = text.replace('id="stat-enabled">28<', 'id="stat-enabled">40<')
+              path.write_text(text, encoding="utf-8")
+          PY
           test -f _site/index.html
           test -f _site/owner.html
           node --check _site/app.js
           node --check _site/catalog.js
+          node --check _site/catalog-extra.js
           node --check _site/owner.js
           python - <<'PY'
           import json
@@ -43,7 +59,7 @@ jobs:
               "deployed_at": datetime.now(timezone.utc).isoformat(),
               "frontend_url": "https://xieyaozhong.github.io/Thank-you-cai/",
               "owner_url": "https://xieyaozhong.github.io/Thank-you-cai/owner.html",
-              "product_count": 28,
+              "product_count": 40,
           }
           with open("_site/deployment-status.json", "w", encoding="utf-8") as file:
               json.dump(payload, file, ensure_ascii=False, indent=2)

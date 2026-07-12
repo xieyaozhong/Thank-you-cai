@@ -1,0 +1,249 @@
+/* 蔬果卡專屬特效 v3：每張卡使用獨立動畫與色彩，保留原像素風。 */
+.product-card__art[data-card-effect],
+.collection-card[data-card-effect] {
+  isolation: isolate;
+}
+
+.card-effect-layer {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.card-effect-layer i {
+  position: absolute;
+  display: block;
+  background: var(--effect-color);
+}
+.card-effect-tag {
+  position: absolute;
+  z-index: 6;
+  right: 10px;
+  top: 10px;
+  max-width: 45%;
+  padding: 5px 9px;
+  border: 1px solid rgba(24,52,39,.09);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--effect-color) 72%, #183427);
+  background: rgba(255,255,255,.84);
+  box-shadow: 0 3px 9px rgba(24,52,39,.08);
+  font-size: .64rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.product-card__category-chip { top: 43px; }
+
+.product-card__art[data-card-effect] > .pixel-sprite,
+.collection-card[data-card-effect] > .pixel-sprite {
+  z-index: 3;
+  transform-origin: center 70%;
+}
+
+[data-card-effect="leaf-orbit"] .card-effect-layer i,
+[data-card-effect="leaf-dance"] .card-effect-layer i,
+[data-card-effect="leaf-wind"] .card-effect-layer i,
+[data-card-effect="frost-leaf"] .card-effect-layer i {
+  width: 16px; height: 10px; border-radius: 80% 20% 80% 20%; opacity: .25;
+  animation: card-leaf-orbit 3.2s linear infinite;
+}
+[data-card-effect^="leaf-"] .card-effect-layer i:nth-child(1),
+[data-card-effect="frost-leaf"] .card-effect-layer i:nth-child(1) { left: 18%; top: 26%; }
+[data-card-effect^="leaf-"] .card-effect-layer i:nth-child(2),
+[data-card-effect="frost-leaf"] .card-effect-layer i:nth-child(2) { right: 17%; top: 35%; animation-delay: -.8s; }
+[data-card-effect^="leaf-"] .card-effect-layer i:nth-child(3),
+[data-card-effect="frost-leaf"] .card-effect-layer i:nth-child(3) { left: 30%; bottom: 22%; animation-delay: -1.6s; }
+[data-card-effect^="leaf-"] .card-effect-layer i:nth-child(4),
+[data-card-effect="frost-leaf"] .card-effect-layer i:nth-child(4) { right: 28%; bottom: 18%; animation-delay: -2.4s; }
+[data-card-effect="leaf-orbit"] > .pixel-sprite,
+[data-card-effect="leaf-dance"] > .pixel-sprite,
+[data-card-effect="leaf-wind"] > .pixel-sprite,
+[data-card-effect="frost-leaf"] > .pixel-sprite { animation: card-soft-sway 2.8s ease-in-out infinite; }
+
+[data-card-effect="dew-rise"] .card-effect-layer i,
+[data-card-effect="water-sheen"] .card-effect-layer i,
+[data-card-effect="stream-wave"] .card-effect-layer i,
+[data-card-effect="cool-mist"] .card-effect-layer i,
+[data-card-effect="moon-ripple"] .card-effect-layer i {
+  width: 13px; height: 13px; border-radius: 50%; opacity: .22;
+  background: radial-gradient(circle at 35% 35%, #fff, var(--effect-color-2) 45%, transparent 72%);
+  animation: card-bubble-rise 2.8s ease-in-out infinite;
+}
+[data-card-effect="dew-rise"] .card-effect-layer i:nth-child(1),
+[data-card-effect="water-sheen"] .card-effect-layer i:nth-child(1),
+[data-card-effect="stream-wave"] .card-effect-layer i:nth-child(1),
+[data-card-effect="cool-mist"] .card-effect-layer i:nth-child(1),
+[data-card-effect="moon-ripple"] .card-effect-layer i:nth-child(1) { left: 20%; bottom: 20%; }
+[data-card-effect="dew-rise"] .card-effect-layer i:nth-child(2),
+[data-card-effect="water-sheen"] .card-effect-layer i:nth-child(2),
+[data-card-effect="stream-wave"] .card-effect-layer i:nth-child(2),
+[data-card-effect="cool-mist"] .card-effect-layer i:nth-child(2),
+[data-card-effect="moon-ripple"] .card-effect-layer i:nth-child(2) { right: 22%; bottom: 18%; animation-delay: -.9s; }
+[data-card-effect="dew-rise"] .card-effect-layer i:nth-child(3),
+[data-card-effect="water-sheen"] .card-effect-layer i:nth-child(3),
+[data-card-effect="stream-wave"] .card-effect-layer i:nth-child(3),
+[data-card-effect="cool-mist"] .card-effect-layer i:nth-child(3),
+[data-card-effect="moon-ripple"] .card-effect-layer i:nth-child(3) { left: 38%; bottom: 12%; animation-delay: -1.7s; }
+[data-card-effect="water-sheen"] .card-effect-layer::after,
+[data-card-effect="citrus-ray"] .card-effect-layer::after,
+[data-card-effect="jade-streak"] .card-effect-layer::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(112deg, transparent 25%, rgba(255,255,255,.58) 48%, transparent 67%);
+  transform: translateX(-130%); animation: card-sheen 3.2s ease-in-out infinite;
+}
+
+[data-card-effect="star-twinkle"] .card-effect-layer i,
+[data-card-effect="kernel-spark"] .card-effect-layer i,
+[data-card-effect="heart-spark"] .card-effect-layer i,
+[data-card-effect="pea-spark"] .card-effect-layer i,
+[data-card-effect="ruby-flare"] .card-effect-layer i,
+[data-card-effect="golden-petal"] .card-effect-layer i {
+  width: 10px; height: 10px; background: transparent;
+}
+[data-card-effect="star-twinkle"] .card-effect-layer i::before,
+[data-card-effect="kernel-spark"] .card-effect-layer i::before,
+[data-card-effect="heart-spark"] .card-effect-layer i::before,
+[data-card-effect="pea-spark"] .card-effect-layer i::before,
+[data-card-effect="ruby-flare"] .card-effect-layer i::before,
+[data-card-effect="golden-petal"] .card-effect-layer i::before {
+  content: "✦"; color: var(--effect-color-2); text-shadow: 0 0 9px #fff; font-size: 1rem;
+  animation: card-twinkle 1.8s ease-in-out infinite;
+}
+[data-card-effect*="spark"] .card-effect-layer i:nth-child(1),
+[data-card-effect="star-twinkle"] .card-effect-layer i:nth-child(1),
+[data-card-effect="ruby-flare"] .card-effect-layer i:nth-child(1),
+[data-card-effect="golden-petal"] .card-effect-layer i:nth-child(1) { left: 18%; top: 24%; }
+[data-card-effect*="spark"] .card-effect-layer i:nth-child(2),
+[data-card-effect="star-twinkle"] .card-effect-layer i:nth-child(2),
+[data-card-effect="ruby-flare"] .card-effect-layer i:nth-child(2),
+[data-card-effect="golden-petal"] .card-effect-layer i:nth-child(2) { right: 18%; top: 34%; animation-delay: -.45s; }
+[data-card-effect*="spark"] .card-effect-layer i:nth-child(3),
+[data-card-effect="star-twinkle"] .card-effect-layer i:nth-child(3),
+[data-card-effect="ruby-flare"] .card-effect-layer i:nth-child(3),
+[data-card-effect="golden-petal"] .card-effect-layer i:nth-child(3) { left: 28%; bottom: 20%; animation-delay: -.9s; }
+[data-card-effect*="spark"] .card-effect-layer i:nth-child(4),
+[data-card-effect="star-twinkle"] .card-effect-layer i:nth-child(4),
+[data-card-effect="ruby-flare"] .card-effect-layer i:nth-child(4),
+[data-card-effect="golden-petal"] .card-effect-layer i:nth-child(4) { right: 30%; bottom: 18%; animation-delay: -1.35s; }
+
+[data-card-effect="sun-pulse"] .card-effect-layer::before,
+[data-card-effect="crown-ray"] .card-effect-layer::before,
+[data-card-effect="harvest-breath"] .card-effect-layer::before,
+[data-card-effect="summer-glow"] .card-effect-layer::before,
+[data-card-effect="sunset-flare"] .card-effect-layer::before {
+  content: ""; position: absolute; left: 50%; top: 52%; width: 128px; height: 128px;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--effect-color-2) 45%, transparent) 0 8deg, transparent 8deg 20deg);
+  border-radius: 50%; transform: translate(-50%,-50%) scale(.82); opacity: .32;
+  animation: card-ray-spin 8s linear infinite, card-aura 2.6s ease-in-out infinite;
+}
+[data-card-effect="sun-pulse"] > .pixel-sprite,
+[data-card-effect="crown-ray"] > .pixel-sprite,
+[data-card-effect="harvest-breath"] > .pixel-sprite,
+[data-card-effect="summer-glow"] > .pixel-sprite,
+[data-card-effect="sunset-flare"] > .pixel-sprite { animation: card-breathe 2.6s ease-in-out infinite; }
+
+[data-card-effect="magic-ring"] .card-effect-layer::before,
+[data-card-effect="cosmic-ring"] .card-effect-layer::before,
+[data-card-effect="seed-orbit"] .card-effect-layer::before,
+[data-card-effect="honey-swirl"] .card-effect-layer::before {
+  content: ""; position: absolute; left: 50%; top: 52%; width: 112px; height: 112px;
+  border: 2px solid color-mix(in srgb, var(--effect-color) 60%, transparent); border-radius: 50%;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--effect-color-2) 40%, transparent), inset 0 0 16px color-mix(in srgb, var(--effect-color) 25%, transparent);
+  transform: translate(-50%,-50%) scale(.66); animation: card-ring-bloom 2.8s ease-out infinite;
+}
+[data-card-effect="magic-ring"] .card-effect-layer::after,
+[data-card-effect="cosmic-ring"] .card-effect-layer::after,
+[data-card-effect="seed-orbit"] .card-effect-layer::after,
+[data-card-effect="honey-swirl"] .card-effect-layer::after {
+  content: ""; position: absolute; left: 50%; top: 52%; width: 80px; height: 80px;
+  border: 1px dashed var(--effect-color-2); border-radius: 50%; opacity: .45;
+  transform: translate(-50%,-50%); animation: card-ray-spin 5s linear infinite reverse;
+}
+
+[data-card-effect="juice-bubble"] > .pixel-sprite,
+[data-card-effect="crisp-pop"] > .pixel-sprite,
+[data-card-effect="bean-bounce"] > .pixel-sprite { animation: card-pop 2.2s ease-in-out infinite; }
+[data-card-effect="juice-bubble"] .card-effect-layer i,
+[data-card-effect="crisp-pop"] .card-effect-layer i,
+[data-card-effect="bean-bounce"] .card-effect-layer i {
+  width: 11px; height: 11px; border-radius: 50%; opacity: .2; animation: card-bubble-rise 2.5s ease-in-out infinite;
+}
+[data-card-effect="juice-bubble"] .card-effect-layer i:nth-child(1),
+[data-card-effect="crisp-pop"] .card-effect-layer i:nth-child(1),
+[data-card-effect="bean-bounce"] .card-effect-layer i:nth-child(1) { left: 22%; bottom: 18%; }
+[data-card-effect="juice-bubble"] .card-effect-layer i:nth-child(2),
+[data-card-effect="crisp-pop"] .card-effect-layer i:nth-child(2),
+[data-card-effect="bean-bounce"] .card-effect-layer i:nth-child(2) { right: 23%; bottom: 21%; animation-delay: -1.1s; }
+
+[data-card-effect="vine-sway"] > .pixel-sprite,
+[data-card-effect="blade-sway"] > .pixel-sprite,
+[data-card-effect="ridge-wave"] > .pixel-sprite,
+[data-card-effect="aroma-wave"] > .pixel-sprite { animation: card-vine-sway 2.5s ease-in-out infinite; }
+[data-card-effect="vine-sway"] .card-effect-layer::before,
+[data-card-effect="blade-sway"] .card-effect-layer::before {
+  content: ""; position: absolute; left: 50%; top: 8%; width: 2px; height: 34px;
+  background: var(--effect-color); opacity: .22; transform-origin: top; animation: card-vine-line 2.5s ease-in-out infinite;
+}
+
+[data-card-effect="earth-dust"] .card-effect-layer i,
+[data-card-effect="spore-float"] .card-effect-layer i,
+[data-card-effect="cloud-puff"] .card-effect-layer i,
+[data-card-effect="sugar-drift"] .card-effect-layer i {
+  width: 8px; height: 8px; border-radius: 50%; opacity: .18; animation: card-dust 3s ease-in-out infinite;
+}
+[data-card-effect="earth-dust"] .card-effect-layer i:nth-child(1),
+[data-card-effect="spore-float"] .card-effect-layer i:nth-child(1),
+[data-card-effect="cloud-puff"] .card-effect-layer i:nth-child(1),
+[data-card-effect="sugar-drift"] .card-effect-layer i:nth-child(1) { left: 24%; bottom: 20%; }
+[data-card-effect="earth-dust"] .card-effect-layer i:nth-child(2),
+[data-card-effect="spore-float"] .card-effect-layer i:nth-child(2),
+[data-card-effect="cloud-puff"] .card-effect-layer i:nth-child(2),
+[data-card-effect="sugar-drift"] .card-effect-layer i:nth-child(2) { right: 25%; bottom: 18%; animation-delay: -.8s; }
+[data-card-effect="layer-wave"] .card-effect-layer::before,
+[data-card-effect="forest-pulse"] .card-effect-layer::before,
+[data-card-effect="snow-glow"] .card-effect-layer::before {
+  content: ""; position: absolute; left: 50%; top: 52%; width: 118px; height: 118px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--effect-color-2) 25%, transparent), transparent 66%);
+  transform: translate(-50%,-50%); animation: card-aura 2.9s ease-in-out infinite;
+}
+
+.gacha-machine[data-phase="revealing"][data-reveal-effect] .gacha-machine__screen {
+  box-shadow: inset 0 0 38px color-mix(in srgb, var(--effect-color) 45%, transparent), 0 0 24px color-mix(in srgb, var(--effect-color-2) 42%, transparent);
+}
+.gacha-machine[data-phase="revealing"][data-reveal-effect] .gacha-machine__screen-art {
+  animation: gacha-card-special 520ms cubic-bezier(.2,.9,.2,1.2) both;
+}
+
+@keyframes card-leaf-orbit { 0% { transform: translate(0,0) rotate(0); opacity: 0; } 25% { opacity: .55; } 100% { transform: translate(24px,34px) rotate(95deg); opacity: 0; } }
+@keyframes card-soft-sway { 0%,100% { transform: rotate(-1.5deg) translateY(0) scale(1.24); } 50% { transform: rotate(1.5deg) translateY(-4px) scale(1.27); } }
+@keyframes card-bubble-rise { 0% { transform: translateY(0) scale(.7); opacity: 0; } 28% { opacity: .45; } 100% { transform: translateY(-58px) scale(1.2); opacity: 0; } }
+@keyframes card-sheen { 0%,18% { transform: translateX(-130%); } 60%,100% { transform: translateX(130%); } }
+@keyframes card-twinkle { 0%,100% { transform: scale(.65) rotate(0); opacity: .35; } 50% { transform: scale(1.25) rotate(18deg); opacity: 1; } }
+@keyframes card-ray-spin { to { rotate: 360deg; } }
+@keyframes card-aura { 0%,100% { opacity: .22; scale: .88; } 50% { opacity: .48; scale: 1.08; } }
+@keyframes card-breathe { 0%,100% { transform: translateY(0) scale(1.22); } 50% { transform: translateY(-3px) scale(1.28); } }
+@keyframes card-ring-bloom { 0% { transform: translate(-50%,-50%) scale(.55); opacity: .65; } 100% { transform: translate(-50%,-50%) scale(1.18); opacity: 0; } }
+@keyframes card-pop { 0%,100% { transform: translateY(0) scale(1.23); } 30% { transform: translateY(-2px) scale(1.25); } 55% { transform: translateY(-6px) scale(1.29); } 75% { transform: translateY(-1px) scale(1.24); } }
+@keyframes card-vine-sway { 0%,100% { transform: rotate(-3deg) translateY(0) scale(1.24); } 50% { transform: rotate(4deg) translateY(-3px) scale(1.26); } }
+@keyframes card-vine-line { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+@keyframes card-dust { 0% { transform: translate(0,0) scale(.7); opacity: 0; } 30% { opacity: .35; } 100% { transform: translate(12px,-48px) scale(1.15); opacity: 0; } }
+@keyframes gacha-card-special { 0% { transform: scale(.65) rotate(-4deg); filter: brightness(1.6); } 58% { transform: scale(1.18) rotate(2deg); } 100% { transform: scale(1) rotate(0); filter: none; } }
+
+@media (max-width: 620px) {
+  .card-effect-tag { max-width: 48%; padding: 4px 7px; font-size: .58rem; }
+  .product-card__category-chip { top: 39px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-card-effect] > .pixel-sprite,
+  [data-card-effect] .card-effect-layer,
+  [data-card-effect] .card-effect-layer::before,
+  [data-card-effect] .card-effect-layer::after,
+  [data-card-effect] .card-effect-layer i,
+  [data-card-effect] .card-effect-layer i::before,
+  .gacha-machine[data-reveal-effect] .gacha-machine__screen-art {
+    animation: none !important;
+  }
+  .card-effect-layer { opacity: .45; }
+}

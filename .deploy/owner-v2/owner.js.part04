@@ -1,0 +1,9 @@
+STORAGE_KEY, OWNER_SETTINGS_KEY].includes(event.key)) {
+      loadRemoteSettings();
+      refreshOrders({ silent: false });
+    }
+  });
+  addEventListener("beforeunload", (event) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
+
+  init();
+})();

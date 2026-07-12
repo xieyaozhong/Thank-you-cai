@@ -9,6 +9,16 @@ create table if not exists public.owner_accounts (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.owner_email_allowlist (
+  email text primary key,
+  created_at timestamptz not null default now(),
+  constraint owner_email_allowlist_lowercase check (email = lower(email))
+);
+
+insert into public.owner_email_allowlist(email)
+values ('handsomeboy784@gmail.com')
+on conflict (email) do nothing;
+
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   store_id text not null,
@@ -32,7 +42,6 @@ create table if not exists public.orders (
 alter table public.orders add column if not exists owner_note text not null default '';
 alter table public.orders add column if not exists priority boolean not null default false;
 
--- Add upgrade constraints only when they do not already exist.
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'orders_owner_note_length') then
@@ -75,7 +84,42 @@ drop trigger if exists store_settings_set_updated_at on public.store_settings;
 create trigger store_settings_set_updated_at before update on public.store_settings
 for each row execute function public.set_updated_at();
 
+create or replace function public.grant_owner_account_from_allowlist()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.email is not null and exists (
+    select 1
+    from public.owner_email_allowlist
+    where email = lower(new.email)
+  ) then
+    insert into public.owner_accounts(user_id)
+    values (new.id)
+    on conflict (user_id) do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.grant_owner_account_from_allowlist() from public, anon, authenticated;
+
+drop trigger if exists approved_owner_signup on auth.users;
+create trigger approved_owner_signup
+after insert or update of email on auth.users
+for each row execute function public.grant_owner_account_from_allowlist();
+
+insert into public.owner_accounts(user_id)
+select users.id
+from auth.users as users
+join public.owner_email_allowlist as approved
+  on approved.email = lower(users.email)
+on conflict (user_id) do nothing;
+
 alter table public.owner_accounts enable row level security;
+alter table public.owner_email_allowlist enable row level security;
 alter table public.orders enable row level security;
 alter table public.store_settings enable row level security;
 
@@ -97,6 +141,7 @@ revoke all on function public.is_store_owner() from public, anon;
 grant execute on function public.is_store_owner() to authenticated;
 
 revoke all on public.owner_accounts from anon, authenticated;
+revoke all on public.owner_email_allowlist from anon, authenticated;
 revoke all on public.orders from anon, authenticated;
 revoke all on public.store_settings from anon, authenticated;
 
@@ -151,8 +196,8 @@ values ('thank-you-cai')
 on conflict (store_id) do nothing;
 
 -- 啟用步驟
--- 1. 在 Supabase Authentication 建立攤主帳號。
--- 2. 到 Authentication > Users 複製該使用者 UUID。
--- 3. 執行：insert into public.owner_accounts(user_id) values ('你的使用者 UUID') on conflict do nothing;
--- 4. 在 GitHub Actions Variables 設定 SUPABASE_URL 與 SUPABASE_PUBLISHABLE_KEY。
--- 5. 重新執行 GitHub Pages workflow。
+-- 1. 在 Supabase SQL Editor 執行完整的 SUPABASE_SETUP.sql。
+-- 2. 開啟攤主頁，按「首次使用：建立攤主帳號」。
+-- 3. 使用 handsomeboy784@gmail.com 設定密碼，並依 Supabase 設定完成信箱驗證。
+-- 4. 驗證完成後即可從攤主頁登入；核准名單與 trigger 會自動建立 owner_accounts 資料。
+-- 5. 請勿把 service_role、secret key 或密碼寫入前端或版本庫。

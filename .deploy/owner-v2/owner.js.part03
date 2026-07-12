@@ -1,0 +1,270 @@
+al))}</p><button onclick="window.print()">列印</button><script>window.onload=()=>window.print()<\/script></body></html>`);
+    popup.document.close();
+  }
+
+  function csvCell(value) {
+    const text = String(value ?? "");
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+
+  function exportCsv() {
+    const list = filteredOrders();
+    if (!list.length) { showToast("目前沒有可匯出的訂單。", true); return; }
+    const rows = [["訂單編號", "建立時間", "狀態", "顧客", "聯絡方式", "取貨時段", "商品明細", "小計", "運費", "合計", "顧客備註", "攤主備註", "優先"]];
+    list.forEach((order) => rows.push([order.order_code, formatDate(order.created_at), statusNames[order.status] || order.status, order.customer_name, order.contact, order.pickup_slot, (order.items || []).map((item) => `${item.name}×${item.quantity}`).join("；"), order.subtotal, order.delivery, order.total, order.note || "", order.owner_note || "", order.priority ? "是" : "否"]));
+    const content = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `thank-you-cai-orders-${localDateKey()}.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast(`已匯出 ${list.length} 張訂單。`);
+  }
+
+  function updateDiagnostics() {
+    els.diagnosticMode.textContent = localMode ? "本機預覽模式" : "雲端營運模式";
+    els.diagnosticDatabase.textContent = cloud?.isConfigured() ? "Supabase 已設定" : "尚未設定";
+    els.diagnosticUser.textContent = sessionEmail || (localMode ? "本機預覽，未登入" : "—");
+    const interval = Math.max(5, Math.round((Number(cloud?.config?.refreshIntervalMs) || 10000) / 1000));
+    els.refreshIntervalLabel.textContent = interval;
+  }
+
+  function setRefreshTimer() {
+    clearInterval(refreshTimer);
+    const preferences = loadPreferences();
+    els.autoRefreshToggle.checked = preferences.autoRefresh !== false;
+    if (preferences.autoRefresh !== false && !localMode) {
+      refreshTimer = setInterval(() => refreshOrders({ silent: false }), Math.max(5000, Number(cloud.config.refreshIntervalMs) || 10000));
+    }
+  }
+
+  function showLogin() {
+    clearInterval(refreshTimer);
+    localMode = false;
+    sessionEmail = "";
+    els.app.hidden = true;
+    els.auth.hidden = false;
+    els.logout.textContent = "登出";
+    setCloudStatus(cloud?.isConfigured() ? "請登入攤主帳號。" : "雲端資料庫尚未設定。", false);
+    updateDiagnostics();
+  }
+
+  async function showDashboard(options = {}) {
+    localMode = Boolean(options.local);
+    sessionEmail = options.email || "";
+    els.auth.hidden = true;
+    els.app.hidden = false;
+    els.logout.textContent = localMode ? "離開預覽" : "登出";
+    selectedOrderIds.clear();
+    knownOrderCodes = new Set();
+    hasLoadedOrders = false;
+    updateDiagnostics();
+    await Promise.all([loadRemoteSettings(), refreshOrders({ silent: true })]);
+    setRefreshTimer();
+  }
+
+  async function init() {
+    const customerUrl = new URL("./customer.html", location.href).href;
+    els.customerLink.textContent = customerUrl;
+    updateNotificationUi();
+    updateDiagnostics();
+    if (!cloud?.isConfigured()) {
+      els.setupHelp.hidden = false;
+      els.loginForm.hidden = true;
+      els.resetPassword.hidden = true;
+      els.authDescription.textContent = "目前尚未連接雲端資料庫，可先預覽完整攤主功能與同裝置訂單。";
+      setCloudStatus("雲端資料庫尚未設定。", false);
+      return;
+    }
+    const session = await cloud.getSession();
+    if (!session) { showLogin(); return; }
+    try {
+      const allowed = await cloud.checkOwnerAccess();
+      if (!allowed) {
+        await cloud.signOut();
+        showLogin();
+        showToast("這個帳號尚未加入 owner_accounts，無法開啟攤主工作台。", true);
+        return;
+      }
+      setCloudStatus(`已登入 ${session.email}`, true);
+      await showDashboard({ email: session.email });
+    } catch (error) {
+      showLogin();
+      showToast(error.message, true);
+    }
+  }
+
+  els.loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    els.loginButton.disabled = true;
+    els.loginButton.textContent = "登入中…";
+    try {
+      const session = await cloud.signIn(form.get("email"), form.get("password"), form.get("remember") === "on");
+      const allowed = await cloud.checkOwnerAccess();
+      if (!allowed) {
+        await cloud.signOut();
+        throw new Error("登入成功，但此帳號尚未加入 owner_accounts。");
+      }
+      setCloudStatus(`已登入 ${session.email}`, true);
+      await showDashboard({ email: session.email });
+    } catch (error) {
+      showToast(error.message, true);
+    } finally {
+      els.loginButton.disabled = false;
+      els.loginButton.textContent = "登入工作台";
+    }
+  });
+
+  els.resetPassword.addEventListener("click", async () => {
+    const email = els.loginForm.elements.email.value;
+    try {
+      await cloud.requestPasswordReset(email, new URL("./owner.html", location.href).href);
+      showToast("密碼重設信已寄出；請確認 Supabase Redirect URL 已包含此攤主頁網址。");
+    } catch (error) { showToast(error.message, true); }
+  });
+
+  els.localPreview.addEventListener("click", () => showDashboard({ local: true }));
+  els.logout.addEventListener("click", async () => {
+    if (!localMode) await cloud.signOut();
+    showLogin();
+    setCloudStatus(localMode ? "已離開本機預覽。" : "已安全登出。", false);
+  });
+
+  els.refreshOrders.addEventListener("click", () => refreshOrders({ silent: false }));
+  [els.search, els.statusFilter, els.rangeFilter, els.dateFilter, els.sort].forEach((element) => element.addEventListener("input", renderOrders));
+  els.clearOrderFilters.addEventListener("click", () => {
+    els.search.value = ""; els.statusFilter.value = "all"; els.rangeFilter.value = "all"; els.dateFilter.value = ""; els.sort.value = "newest"; renderOrders();
+  });
+  els.exportOrders.addEventListener("click", exportCsv);
+  els.bulkOrderStatus.addEventListener("change", () => syncOrderSelectionUi());
+  els.applyBulkStatus.addEventListener("click", applyBulkStatus);
+  els.selectAllOrders.addEventListener("change", () => {
+    filteredOrders().forEach((order) => {
+      const id = orderKey(order);
+      if (els.selectAllOrders.checked) selectedOrderIds.add(id); else selectedOrderIds.delete(id);
+    });
+    renderOrders();
+  });
+
+  els.orders.addEventListener("change", async (event) => {
+    const checkbox = event.target.closest(".order-checkbox");
+    if (checkbox) {
+      const card = checkbox.closest("[data-order-id]");
+      if (checkbox.checked) selectedOrderIds.add(card.dataset.orderId); else selectedOrderIds.delete(card.dataset.orderId);
+      syncOrderSelectionUi();
+      return;
+    }
+    const select = event.target.closest(".order-status-select");
+    if (!select) return;
+    const card = select.closest("[data-order-id]");
+    const order = orders.find((item) => orderKey(item) === card.dataset.orderId);
+    if (!order) return;
+    const previous = select.dataset.current;
+    select.disabled = true;
+    try {
+      await setOrderStatus(order, select.value);
+      select.dataset.current = select.value;
+      card.dataset.status = select.value;
+      updateOverview();
+      showToast(`訂單已更新為「${statusNames[select.value]}」。`);
+    } catch (error) {
+      select.value = previous;
+      showToast(error.message, true);
+    } finally { select.disabled = false; }
+  });
+
+  els.orders.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-order-action]");
+    if (!button) return;
+    const card = button.closest("[data-order-id]");
+    const order = orders.find((item) => orderKey(item) === card.dataset.orderId);
+    if (!order) return;
+    const action = button.dataset.orderAction;
+    if (action === "copy") { await copyOrder(order); return; }
+    if (action === "print") { printOrder(order); return; }
+    button.disabled = true;
+    try {
+      if (action === "priority") {
+        await saveOrderMeta(order, { priority: !order.priority });
+        renderOrders();
+        showToast(order.priority ? "已標為優先訂單。" : "已取消優先標記。");
+      }
+      if (action === "save-note") {
+        const note = card.querySelector(".owner-note-field").value.trim().slice(0, 500);
+        await saveOrderMeta(order, { ownerNote: note });
+        showToast(localMode ? "攤主備註已保存在本機。" : "攤主備註已同步。");
+      }
+    } catch (error) { showToast(error.message, true); }
+    finally { button.disabled = false; }
+  });
+
+  els.list.addEventListener("input", (event) => {
+    const row = event.target.closest("[data-product-id]");
+    if (!row) return;
+    if (event.target.classList.contains("product-select")) {
+      if (event.target.checked) selectedProductIds.add(row.dataset.productId); else selectedProductIds.delete(row.dataset.productId);
+      syncProductSelectionUi();
+      return;
+    }
+    updateProductRowAppearance(row);
+    setDirty(true);
+    filterProducts();
+    updateProductStats();
+  });
+
+  els.list.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-stock-delta]");
+    if (!button) return;
+    const row = button.closest("[data-product-id]");
+    const input = row.querySelector('[data-field="stock"]');
+    input.value = Math.min(9999, Math.max(0, (Number(input.value) || 0) + Number(button.dataset.stockDelta)));
+    updateProductRowAppearance(row);
+    setDirty(true);
+    filterProducts();
+    updateProductStats();
+  });
+
+  [els.productSearch, els.productCategory, els.productStatus].forEach((element) => element.addEventListener("input", filterProducts));
+  els.selectFilteredProducts.addEventListener("click", () => {
+    visibleProductRows().forEach((row) => selectedProductIds.add(row.dataset.productId));
+    syncProductSelectionUi();
+  });
+  document.querySelector(".product-bulk-bar").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-product-bulk]");
+    if (button) bulkEditProducts(button.dataset.productBulk);
+  });
+
+  els.announcement.addEventListener("input", () => { els.announcementCount.textContent = els.announcement.value.length; setDirty(true); });
+  els.save.addEventListener("click", saveSettings);
+  els.stickySave.addEventListener("click", saveSettings);
+  els.reset.addEventListener("click", () => {
+    if (confirm("確定恢復全部商品的預設價格、庫存與上下架狀態嗎？")) {
+      localStorage.removeItem(OWNER_SETTINGS_KEY);
+      renderProducts();
+      setDirty(true);
+    }
+  });
+
+  els.copyCustomerLink.addEventListener("click", async () => {
+    const url = new URL("./customer.html", location.href).href;
+    try { await navigator.clipboard.writeText(url); showToast("顧客連結已複製。"); }
+    catch { prompt("複製顧客連結：", url); }
+  });
+
+  els.enableNotifications.addEventListener("click", requestNotifications);
+  els.systemNotificationButton.addEventListener("click", requestNotifications);
+  els.autoRefreshToggle.addEventListener("change", () => {
+    savePreferences({ autoRefresh: els.autoRefreshToggle.checked });
+    setRefreshTimer();
+    showToast(els.autoRefreshToggle.checked ? "已開啟自動同步。" : "已關閉自動同步，可使用「立即同步」。");
+  });
+
+  addEventListener("online", () => refreshOrders({ silent: false }));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !els.app.hidden) refreshOrders({ silent: true }); });
+  addEventListener("storage", (event) => {
+    if (localMode && [CUSTOMER_

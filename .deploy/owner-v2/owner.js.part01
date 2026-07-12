@@ -1,0 +1,194 @@
+ateProductStats();
+    setDirty(false);
+  }
+
+  function collectSettings() {
+    const products = {};
+    els.list.querySelectorAll("[data-product-id]").forEach((row) => {
+      const values = productRowValues(row);
+      products[values.id] = { price: values.price, stock: values.stock, enabled: values.enabled };
+    });
+    return { announcement: els.announcement.value.trim().slice(0, 120), products, updatedAt: new Date().toISOString() };
+  }
+
+  function visibleProductRows() {
+    return [...els.list.querySelectorAll("[data-product-id]")].filter((row) => !row.hidden);
+  }
+
+  function filterProducts() {
+    const query = els.productSearch.value.trim().toLowerCase();
+    const category = els.productCategory.value;
+    const status = els.productStatus.value;
+    let visible = 0;
+    els.list.querySelectorAll("[data-product-id]").forEach((row) => {
+      const values = productRowValues(row);
+      const matchesQuery = !query || row.dataset.search.includes(query);
+      const matchesCategory = category === "all" || row.dataset.category === category;
+      const matchesStatus = status === "all" || (status === "enabled" && values.enabled) || (status === "disabled" && !values.enabled) || (status === "low" && values.enabled && values.stock <= LOW_STOCK_THRESHOLD) || (status === "out" && values.stock === 0);
+      row.hidden = !(matchesQuery && matchesCategory && matchesStatus);
+      if (!row.hidden) visible += 1;
+    });
+    els.productResultCount.textContent = `顯示 ${visible} 項商品`;
+    syncProductSelectionUi();
+  }
+
+  function updateProductRowAppearance(row) {
+    const values = productRowValues(row);
+    row.classList.toggle("is-disabled", !values.enabled);
+    row.classList.toggle("is-low-stock", values.enabled && values.stock <= LOW_STOCK_THRESHOLD);
+    row.querySelector(".owner-toggle span").textContent = values.enabled ? "已上架" : "已下架";
+    const identity = row.querySelector(".owner-product-ident div");
+    let warning = identity.querySelector(".stock-warning");
+    if (values.enabled && values.stock <= LOW_STOCK_THRESHOLD) {
+      if (!warning) { warning = document.createElement("span"); warning.className = "stock-warning"; identity.append(warning); }
+      warning.textContent = values.stock === 0 ? "已售罄" : `低庫存 ${values.stock}`;
+    } else warning?.remove();
+  }
+
+  function updateProductStats() {
+    const rows = [...els.list.querySelectorAll("[data-product-id]")];
+    const values = rows.map(productRowValues);
+    const enabled = values.filter((item) => item.enabled);
+    const low = enabled.filter((item) => item.stock <= LOW_STOCK_THRESHOLD);
+    els.statTotal.textContent = rows.length;
+    els.statEnabled.textContent = enabled.length;
+    els.statStock.textContent = enabled.reduce((sum, item) => sum + item.stock, 0);
+    els.statLowStock.textContent = low.length;
+    els.statOrders.textContent = orders.length;
+    renderLowStock();
+  }
+
+  function syncProductSelectionUi() {
+    els.list.querySelectorAll("[data-product-id]").forEach((row) => {
+      row.querySelector(".product-select").checked = selectedProductIds.has(row.dataset.productId);
+    });
+    els.selectedProductCount.textContent = `已選 ${selectedProductIds.size} 項`;
+  }
+
+  function bulkEditProducts(action) {
+    if (action === "clear") {
+      selectedProductIds.clear();
+      syncProductSelectionUi();
+      return;
+    }
+    if (!selectedProductIds.size) { showToast("請先選取商品。", true); return; }
+    els.list.querySelectorAll("[data-product-id]").forEach((row) => {
+      if (!selectedProductIds.has(row.dataset.productId)) return;
+      const enabled = row.querySelector('[data-field="enabled"]');
+      const stock = row.querySelector('[data-field="stock"]');
+      if (action === "enable") enabled.checked = true;
+      if (action === "disable") enabled.checked = false;
+      if (action === "add10") stock.value = Math.min(9999, Math.max(0, Number(stock.value) || 0) + 10);
+      updateProductRowAppearance(row);
+    });
+    setDirty(true);
+    filterProducts();
+    updateProductStats();
+  }
+
+  function orderSearchText(order) {
+    const itemNames = (Array.isArray(order.items) ? order.items : []).map((item) => item.name || "").join(" ");
+    return `${order.order_code} ${order.customer_name} ${order.contact} ${order.pickup_slot} ${order.note || ""} ${order.owner_note || ""} ${itemNames}`.toLowerCase();
+  }
+
+  function filteredOrders() {
+    const query = els.search.value.trim().toLowerCase();
+    const status = els.statusFilter.value;
+    const range = els.rangeFilter.value;
+    const date = els.dateFilter.value;
+    const now = new Date();
+    const todayKey = localDateKey(now);
+    const rangeStart = range === "7" || range === "30" ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - (Number(range) - 1)) : null;
+    const list = orders.filter((order) => {
+      const created = new Date(order.created_at);
+      const matchesQuery = !query || orderSearchText(order).includes(query);
+      const matchesStatus = status === "all" || order.status === status;
+      const matchesDate = !date || localDateKey(created) === date;
+      const matchesRange = range === "all" || (range === "today" && localDateKey(created) === todayKey) || (rangeStart && created >= rangeStart);
+      return matchesQuery && matchesStatus && matchesDate && matchesRange;
+    });
+    return list.sort((a, b) => {
+      if (els.sort.value === "oldest") return new Date(a.created_at) - new Date(b.created_at);
+      if (els.sort.value === "total-desc") return Number(b.total || 0) - Number(a.total || 0);
+      if (els.sort.value === "pickup") return String(a.pickup_slot).localeCompare(String(b.pickup_slot), "zh-Hant");
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }
+
+  function contactLink(contact) {
+    const value = String(contact || "").trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return `mailto:${encodeURIComponent(value)}`;
+    const digits = value.replace(/[^0-9+]/g, "");
+    if (digits.replace(/\D/g, "").length >= 8) return `tel:${digits}`;
+    return "";
+  }
+
+  function renderOrders() {
+    const list = filteredOrders();
+    const existingIds = new Set(orders.map(orderKey));
+    [...selectedOrderIds].forEach((id) => { if (!existingIds.has(id)) selectedOrderIds.delete(id); });
+    updateOverview();
+    els.orderResultCount.textContent = `顯示 ${list.length} 張訂單（全部 ${orders.length} 張）`;
+    if (!list.length) {
+      els.orders.innerHTML = '<div class="owner-empty"><strong>沒有符合條件的訂單</strong><p>調整搜尋或篩選條件後再試一次。</p></div>';
+      syncOrderSelectionUi(list);
+      return;
+    }
+    els.orders.innerHTML = list.map((order) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const id = orderKey(order);
+      const href = contactLink(order.contact);
+      const contact = href ? `<a href="${escapeHtml(href)}">${escapeHtml(order.contact)}</a>` : `<span>${escapeHtml(order.contact)}</span>`;
+      return `<article class="owner-order-card${order.priority ? " is-priority" : ""}" data-order-id="${escapeHtml(id)}" data-status="${escapeHtml(order.status)}">
+        <header>
+          <div class="order-heading"><input class="order-checkbox" type="checkbox" aria-label="選取訂單 ${escapeHtml(order.order_code)}" ${selectedOrderIds.has(id) ? "checked" : ""}/><div><small>${escapeHtml(formatDate(order.created_at))}${order._local ? "・本機訂單" : ""}</small><h3>${escapeHtml(order.order_code)}</h3></div></div>
+          <div class="order-header-actions"><button type="button" class="priority-button${order.priority ? " is-active" : ""}" data-order-action="priority" aria-pressed="${order.priority ? "true" : "false"}">${order.priority ? "★ 優先" : "☆ 標為優先"}</button><select class="order-status-select" data-current="${escapeHtml(order.status)}" aria-label="訂單狀態">${Object.entries(statusNames).map(([value, name]) => `<option value="${value}" ${value === order.status ? "selected" : ""}>${name}</option>`).join("")}</select></div>
+        </header>
+        <div class="owner-order-customer"><div><small>顧客</small><strong>${escapeHtml(order.customer_name)}</strong></div><div><small>聯絡方式</small>${contact}</div><div><small>取貨時段</small><span>${escapeHtml(order.pickup_slot)}</span></div></div>
+        <details><summary>${quantity} 件商品・查看訂單明細</summary><div class="owner-order-lines">${items.map((item) => `<div><span>${escapeHtml(item.name)} × ${Number(item.quantity) || 0}${item.unit ? `（${escapeHtml(item.unit)}）` : ""}</span><strong>${money((Number(item.price) || 0) * (Number(item.quantity) || 0))}</strong></div>`).join("")}</div>${order.note ? `<p class="owner-order-note"><strong>顧客備註：</strong>${escapeHtml(order.note)}</p>` : ""}</details>
+        <div class="order-owner-tools"><label>攤主內部備註<textarea class="owner-note-field" maxlength="500" placeholder="例如：已電話確認、需分袋、延後取貨…">${escapeHtml(order.owner_note || "")}</textarea></label><button type="button" class="secondary-button" data-order-action="save-note">儲存備註</button></div>
+        <footer class="order-card-footer"><div class="order-card-footer__actions"><button type="button" class="secondary-button" data-order-action="copy">複製摘要</button><button type="button" class="secondary-button" data-order-action="print">列印訂單</button></div><div class="order-card-total"><span>訂單合計</span><strong>${money(order.total)}</strong></div></footer>
+      </article>`;
+    }).join("");
+    syncOrderSelectionUi(list);
+  }
+
+  function syncOrderSelectionUi(list = filteredOrders()) {
+    const visibleIds = list.map(orderKey);
+    const selectedVisible = visibleIds.filter((id) => selectedOrderIds.has(id)).length;
+    els.selectAllOrders.checked = visibleIds.length > 0 && selectedVisible === visibleIds.length;
+    els.selectAllOrders.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
+    els.selectedOrderCount.textContent = `已選 ${selectedOrderIds.size} 張`;
+    els.applyBulkStatus.disabled = !selectedOrderIds.size || !els.bulkOrderStatus.value;
+  }
+
+  function updateOverview() {
+    const activeOrders = orders.filter((order) => order.status !== "cancelled");
+    const today = localDateKey();
+    const todayOrders = activeOrders.filter((order) => localDateKey(order.created_at) === today);
+    const pending = orders.filter((order) => order.status === "pending");
+    const processing = orders.filter((order) => ["confirmed", "preparing", "ready"].includes(order.status));
+    const completed = orders.filter((order) => order.status === "completed");
+    const revenue = completed.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const average = activeOrders.length ? activeOrders.reduce((sum, order) => sum + Number(order.total || 0), 0) / activeOrders.length : 0;
+    const completionRate = activeOrders.length ? Math.round(completed.length / activeOrders.length * 100) : 0;
+    els.overviewToday.textContent = todayOrders.length;
+    els.overviewTodayAmount.textContent = money(todayOrders.reduce((sum, order) => sum + Number(order.total || 0), 0));
+    els.overviewPending.textContent = pending.length;
+    els.overviewProcessing.textContent = processing.length;
+    els.overviewCompleted.textContent = completed.length;
+    els.overviewCompletionRate.textContent = `完成率 ${completionRate}%`;
+    els.overviewRevenue.textContent = money(revenue);
+    els.overviewAverage.textContent = money(average);
+    els.overviewTotal.textContent = `共 ${orders.length} 張訂單`;
+    els.statOrders.textContent = orders.length;
+    renderSalesChart();
+    renderTopProducts();
+    renderLowStock();
+  }
+
+  function renderSalesChart() {
+    const days = [];
+    const now = new Date();
+    for (let offset = 6; offset >= 0; of

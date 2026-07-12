@@ -31,6 +31,14 @@ jobs:
           unzip -q /tmp/site.zip -d _site
           cat .deploy/cloud-overlay.zip.b64.part* | base64 --decode > /tmp/cloud-overlay.zip
           unzip -qo /tmp/cloud-overlay.zip -d _site
+
+          # Owner dashboard v2 overrides are kept as readable source files.
+          cp .deploy/owner-v2/owner.html _site/owner.html
+          cp .deploy/owner-v2/owner.css _site/owner.css
+          cp .deploy/owner-v2/cloud-client.js _site/cloud-client.js
+          cat .deploy/owner-v2/owner.js.part* > _site/owner.js
+          cp SUPABASE_SETUP.sql _site/SUPABASE_SETUP.sql
+
           rm -f _site/catalog-extra.js
           python - <<'PY'
           from pathlib import Path
@@ -39,12 +47,16 @@ jobs:
           owner_html = owner_html.replace('<script src="./catalog-extra.js" defer></script>', '')
           owner_path.write_text(owner_html, encoding='utf-8')
           PY
+
           test -f _site/index.html
           test -f _site/customer.html
           test -f _site/owner.html
           test -f _site/cloud-config.js
           test -f _site/cloud-client.js
           test -f _site/SUPABASE_SETUP.sql
+          grep -Fq "營運總覽" _site/owner.html
+          grep -Fq "owner_note" _site/SUPABASE_SETUP.sql
+          grep -Fq "updateOrdersStatus" _site/cloud-client.js
           node --check _site/app.js
           node --check _site/catalog.js
           node --check _site/cloud-client.js
@@ -79,6 +91,17 @@ jobs:
               'product_count': 40,
               'cloud_configured': cloud_configured,
               'architecture': 'separate-customer-owner',
+              'owner_dashboard': 'v2',
+              'owner_features': [
+                  'business-overview',
+                  'bulk-order-status',
+                  'csv-export',
+                  'owner-notes',
+                  'priority-orders',
+                  'inventory-alerts',
+                  'bulk-inventory-actions',
+                  'browser-notifications',
+              ],
           }
           Path('_site/deployment-status.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
@@ -110,7 +133,8 @@ jobs:
             status_json="$(curl -fsSL --retry 1 --retry-delay 1 "$base/deployment-status.json" || true)"
             if grep -Fq "顧客端" <<<"$portal" \
               && grep -Fq "CUSTOMER CHECKOUT" <<<"$customer" \
-              && grep -Fq "攤主登入" <<<"$owner" \
+              && grep -Fq "營運總覽" <<<"$owner" \
+              && grep -Fq '"owner_dashboard": "v2"' <<<"$status_json" \
               && grep -Fq "$GITHUB_SHA" <<<"$status_json"; then
               verified=true
               break
@@ -120,4 +144,4 @@ jobs:
           test "$verified" = true
           echo "Verified portal: $base/"
           echo "Verified customer: $base/customer.html"
-          echo "Verified owner: $base/owner.html"
+          echo "Verified owner dashboard v2: $base/owner.html"

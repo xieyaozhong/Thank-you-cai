@@ -111,3 +111,5 @@ jobs:
             git pull --rebase origin gh-pages
           done
           exit 1
+
+# Password reset email requested again on 2026-07-13.

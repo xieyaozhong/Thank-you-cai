@@ -1,9 +1,9 @@
 {
-  "name": "謝謝你，菜！獨立靜態版",
+  "name": "謝謝你，菜！線上訂購",
   "short_name": "謝謝你，菜！",
-  "description": "可獨立瀏覽每週蔬果、使用本機菜籃與收藏抽卡的自家菜攤。",
+  "description": "查看本週蔬果、菜況、價格與庫存，送出訂單並追蹤同步狀態。",
   "lang": "zh-Hant",
-  "start_url": "./customer.html",
+  "start_url": "./customer.html?source=pwa",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fffaf0",
@@ -11,5 +11,14 @@
   "categories": [
     "shopping",
     "lifestyle"
+  ],
+  "id": "./customer.html",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

@@ -127,7 +127,7 @@
     const delivery = subtotal >= 500 ? 0 : 60;
     const createdAt = Number.isFinite(Date.parse(String(order.createdAt))) ? String(order.createdAt) : new Date(0).toISOString();
     return {
-      id: String(order.id || "DEMO-LOCAL").slice(0, 24),
+      id: String(order.id || "TYC-LOCAL").slice(0, 24),
       createdAt,
       nickname: String(order.nickname || "小菜友").slice(0, 30),
       slot: String(order.slot || "未選擇").slice(0, 30),
@@ -536,7 +536,7 @@
   }
 
   function clearLocalData() {
-    const confirmed = window.confirm("確定要清除這台裝置上的菜籃、試玩訂單、點數與收藏嗎？");
+    const confirmed = window.confirm("確定要清除這台裝置上的菜籃、訂單紀錄、菜籽點數與收藏嗎？");
     if (!confirmed) return;
     drawSequence += 1;
     isDrawing = false;
@@ -545,7 +545,7 @@
     saveState();
     renderAll();
     setGachaDisplay("pineapple", "金鑽鳳梨", "準備好了嗎？", "按下旋鈕抽菜卡");
-    showToast("本機試玩資料已清除。", true);
+    showToast("本機顧客資料已清除。", true);
   }
 
   function scrollToCart() {
@@ -653,7 +653,7 @@
     }
   });
 
-  window.THANK_YOU_CAI_DEMO = Object.freeze({
+  window.THANK_YOU_CAI_APP_CORE = Object.freeze({
     products: products.map((product) => ({ ...product })),
     storageKey: STORAGE_KEY,
     ownerSettingsKey: OWNER_SETTINGS_KEY,

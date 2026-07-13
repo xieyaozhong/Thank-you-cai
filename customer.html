@@ -4,16 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#183427" />
-    <meta name="description" content="謝謝你，菜！顧客菜攤：挑選蔬果、送出訂單並追蹤同步狀態。" />
+    <meta name="description" content="謝謝你，菜！線上訂購：查看本週蔬果、菜況、價格與庫存，送出訂單並追蹤同步狀態。" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="zh_TW" />
-    <meta property="og:title" content="謝謝你，菜！｜自家菜攤週報" />
-    <meta property="og:description" content="每週新鮮蔬果、真實菜況、像素菜卡與可愛本機菜籃。" />
+    <meta property="og:title" content="謝謝你，菜！｜本週蔬果線上訂購" />
+    <meta property="og:description" content="每週新鮮蔬果、透明菜況與線上訂購，送出後同步至攤主工作台。" />
     <meta property="og:image" content="./og.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <title>顧客菜攤｜謝謝你，菜！</title>
+    <title>線上訂購｜謝謝你，菜！</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./customer-production.css" />
     <link rel="stylesheet" href="./gacha-feedback.css" />
     <link rel="stylesheet" href="./card-visual-upgrade.css" />
     <script src="./cloud-config.js" defer></script>
@@ -22,6 +23,7 @@
     <script src="./card-visual-upgrade.js" defer></script>
     <script src="./app.js" defer></script>
     <script src="./gacha-feedback.js" defer></script>
+    <script src="./customer-production.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
@@ -36,12 +38,12 @@
     <header class="topbar">
       <button class="brand" type="button" data-view-target="market" aria-label="回到菜攤首頁">
         <span class="brand__mark" aria-hidden="true">菜</span>
-        <span><strong>謝謝你，菜！</strong><small>顧客訂購入口</small></span>
+        <span><strong>謝謝你，菜！</strong><small>線上訂購</small></span>
       </button>
 
       <nav class="topnav" aria-label="主要選單">
         <button type="button" class="is-active" data-view-target="market" aria-pressed="true">逛菜攤</button>
-        <button type="button" data-view-target="gacha" aria-pressed="false">抽菜試玩</button>
+        <button type="button" data-view-target="gacha" aria-pressed="false">菜卡活動</button>
         <button type="button" data-view-target="orders" aria-pressed="false">我的訂單</button>
       </nav>
 
@@ -58,12 +60,12 @@
       <section class="view is-active" data-view="market" aria-labelledby="hero-title">
         <div class="hero section-wrap">
           <div class="hero__copy">
-            <span class="eyebrow">PIXEL FARM MARKET・GITHUB PAGES</span>
+            <span class="eyebrow">WEEKLY FRESH MARKET</span>
             <h1 id="hero-title">這週吃什麼？<br />來菜攤挑一籃。</h1>
-            <p>每張卡都標好菜況、果況與價格。選好蔬果後送出訂單；雲端啟用時，攤主工作台會同步收到。</p>
+            <p>查看本週菜況、產地、價格與庫存，選好後直接送出訂單，由攤主確認取貨安排。</p>
             <div class="hero__actions">
               <a class="primary-button" href="#weekly-market">開始挑菜</a>
-              <button class="secondary-button" type="button" data-view-target="gacha">試試抽菜機</button>
+              <button class="secondary-button" type="button" data-view-target="gacha">參加菜卡活動</button>
             </div>
             <div class="hero__facts" aria-label="本週菜攤資訊">
               <span><strong id="week-label">本週菜單</strong>每週更新</span>
@@ -135,7 +137,7 @@
               </div>
               <p id="shipping-note" class="shipping-note">再挑 NT$500 即達免運門檻。</p>
               <button id="checkout-button" type="button" class="primary-button primary-button--wide" disabled>前往送出訂單</button>
-              <small class="local-only">訂單會保存於此裝置；雲端啟用後也會同步給攤主。</small>
+              <small class="local-only">訂單送出後會同步至攤主工作台；連線中斷時將先保存在此裝置並自動補送。</small>
             </aside>
           </div>
         </section>
@@ -143,8 +145,8 @@
 
       <section class="view page-section section-wrap" data-view="gacha" aria-labelledby="gacha-title" hidden>
         <div class="page-intro page-intro--gacha">
-          <div><span class="eyebrow">LOCAL VEGGIE GACHA</span><h1 id="gacha-title">抽一張本週好菜</h1><p>每次花 50 點抽一張蔬果卡。這是純前端試玩，點數與收藏只會留在目前瀏覽器。</p></div>
-          <div class="point-board"><span>本機點數</span><strong id="points-value">150</strong><small>水果點</small></div>
+          <div><span class="eyebrow">VEGGIE CARD REWARDS</span><h1 id="gacha-title">菜卡收藏活動</h1><p>每次使用 50 點抽一張本週蔬果卡；點數與收藏保存在目前裝置，可由完成訂單取得點數。</p></div>
+          <div class="point-board"><span>菜籽點數</span><strong id="points-value">150</strong><small>此裝置</small></div>
         </div>
 
         <div class="gacha-layout">
@@ -176,7 +178,7 @@
       <section class="view page-section section-wrap" data-view="orders" aria-labelledby="orders-title" hidden>
         <div class="page-intro">
           <div><span class="eyebrow">MY ORDERS</span><h1 id="orders-title">我的訂單</h1><p>這裡保存你在此裝置送出的訂單。狀態顯示「已同步」時，攤主工作台已能看到。</p></div>
-          <button id="clear-data-button" type="button" class="secondary-button">清除本機資料</button>
+          <button id="clear-data-button" type="button" class="secondary-button">清除本機顧客資料</button>
         </div>
         <div id="orders-list" class="orders-list" aria-live="polite"></div>
       </section>
@@ -185,7 +187,7 @@
     <footer class="footer section-wrap">
       <div><strong>謝謝你，菜！</strong><span>把每一份好味道，送到剛剛好的地方。</span></div>
       <div class="footer__links"><a href="#main-content">回到頁首 ↑</a></div>
-      <small>獨立靜態版・商品為本週商品・所有資料只保存在目前瀏覽器。</small>
+      <small>正式線上訂購版・商品、售價與庫存以本週頁面及攤主最終確認為準。</small>
     </footer>
 
     <button class="mobile-cart-bar" type="button" data-scroll-cart>
@@ -196,9 +198,9 @@
     <dialog id="checkout-dialog" class="modal">
       <form id="checkout-form" method="dialog">
         <button class="modal-close" type="button" data-close-dialog aria-label="關閉">×</button>
-        <span class="eyebrow">LOCAL ORDER PREVIEW</span>
-        <h2>前往送出訂單</h2>
-        <p>這份訂單只會存於你的瀏覽器，不會送出。請勿填寫真實電話或地址。</p>
+        <span class="eyebrow">ORDER CHECKOUT</span>
+        <h2>確認並送出訂單</h2>
+        <p>請填寫可聯絡資料。送出後，攤主會依實際庫存與取貨時段確認訂單。</p>
         <div id="checkout-summary" class="checkout-summary"></div>
         <label>顧客姓名或稱呼<input name="nickname" maxlength="30" autocomplete="name" placeholder="例如：林小姐" required /></label>
         <label>聯絡方式<input name="contact" maxlength="50" autocomplete="tel" placeholder="電話、LINE 名稱或其他聯絡方式" required /></label>
@@ -220,12 +222,12 @@
       <span class="receipt-face" aria-hidden="true">✓</span>
       <h2 id="receipt-title">訂單處理完成</h2>
       <p id="receipt-message">訂單已保存在此裝置。</p>
-      <div class="receipt-code"><span id="receipt-label">訂單編號</span><strong id="receipt-code">DEMO-0000</strong><small id="receipt-points">獲得 0 點試玩點數</small></div>
+      <div class="receipt-code"><span id="receipt-label">訂單編號</span><strong id="receipt-code">TYC-ORDER</strong><small id="receipt-points">獲得 0 點菜籽點數</small></div>
       <button class="secondary-button" type="button" data-view-target="orders" data-close-dialog>查看我的訂單</button>
       <button class="primary-button" type="button" data-view-target="market" data-close-dialog>繼續逛菜攤</button>
     </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <noscript><div class="noscript">這個展示頁需要 JavaScript 才能使用菜籃與抽卡功能。</div></noscript>
+    <noscript><div class="noscript">此訂購頁需要 JavaScript 才能使用菜籃、送出訂單與查看訂單紀錄。</div></noscript>
   </body>
 </html>

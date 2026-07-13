@@ -1,0 +1,201 @@
+name: Apply Customer Production Release
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".deploy/customer-production/**"
+      - ".github/workflows/customer-production.yml"
+  workflow_run:
+    workflows: ["Publish GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: customer-production-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production sources
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+
+      - name: Checkout published site
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+          fetch-depth: 0
+
+      - name: Apply formal customer release
+        run: |
+          set -euo pipefail
+          cp source/.deploy/customer-production/customer-production.js site/customer-production.js
+          cp source/.deploy/customer-production/customer-production.css site/customer-production.css
+          cp source/.deploy/customer-production/service-worker.js site/service-worker.js
+          cp source/.deploy/customer-production/app-icon.svg site/app-icon.svg
+
+          python - <<'PY'
+          import json
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path('site')
+          customer_path = root / 'customer.html'
+          html = customer_path.read_text(encoding='utf-8')
+
+          html = re.sub(r'\s*<a[^>]*href=["\']\./index\.html["\'][^>]*>\s*(?:切換入口|入口首頁)\s*</a>', '', html)
+          replacements = {
+              '<title>顧客菜攤｜謝謝你，菜！</title>': '<title>線上訂購｜謝謝你，菜！</title>',
+              '謝謝你，菜！顧客菜攤：挑選蔬果、送出訂單並追蹤同步狀態。': '謝謝你，菜！線上訂購：查看本週蔬果、菜況、價格與庫存，送出訂單並追蹤同步狀態。',
+              '謝謝你，菜！｜自家菜攤週報': '謝謝你，菜！｜本週蔬果線上訂購',
+              '每週新鮮蔬果、真實菜況、像素菜卡與可愛本機菜籃。': '每週新鮮蔬果、透明菜況與線上訂購，送出後同步至攤主工作台。',
+              '顧客訂購入口': '線上訂購',
+              '抽菜試玩': '菜卡活動',
+              'PIXEL FARM MARKET・GITHUB PAGES': 'WEEKLY FRESH MARKET',
+              '每張卡都標好菜況、果況與價格。選好蔬果後送出訂單；雲端啟用時，攤主工作台會同步收到。': '查看本週菜況、產地、價格與庫存，選好後直接送出訂單，由攤主確認取貨安排。',
+              '試試抽菜機': '參加菜卡活動',
+              '訂單會保存於此裝置；雲端啟用後也會同步給攤主。': '訂單送出後會同步至攤主工作台；連線中斷時將先保存在此裝置並自動補送。',
+              'LOCAL VEGGIE GACHA': 'VEGGIE CARD REWARDS',
+              '抽一張本週好菜': '菜卡收藏活動',
+              '每次花 50 點抽一張蔬果卡。這是純前端試玩，點數與收藏只會留在目前瀏覽器。': '每次使用 50 點抽一張本週蔬果卡；點數與收藏保存在目前裝置，可由完成訂單取得點數。',
+              '本機點數': '菜籽點數',
+              '水果點': '此裝置',
+              '清除本機資料': '清除本機顧客資料',
+              '獨立靜態版・商品為本週商品・所有資料只保存在目前瀏覽器。': '正式線上訂購版・商品、售價與庫存以本週頁面及攤主最終確認為準。',
+              'LOCAL ORDER PREVIEW': 'ORDER CHECKOUT',
+              '<h2>前往送出訂單</h2>': '<h2>確認並送出訂單</h2>',
+              '這份訂單只會存於你的瀏覽器，不會送出。請勿填寫真實電話或地址。': '請填寫可聯絡資料。送出後，攤主會依實際庫存與取貨時段確認訂單。',
+              'DEMO-0000': 'TYC-ORDER',
+              '獲得 0 點試玩點數': '獲得 0 點菜籽點數',
+              '這個展示頁需要 JavaScript 才能使用菜籃與抽卡功能。': '此訂購頁需要 JavaScript 才能使用菜籃、送出訂單與查看訂單紀錄。',
+          }
+          for old, new in replacements.items():
+              html = html.replace(old, new)
+
+          css_tag = '<link rel="stylesheet" href="./customer-production.css" />'
+          if css_tag not in html:
+              anchor = '<link rel="stylesheet" href="./card-effects.css" />'
+              if anchor in html:
+                  html = html.replace(anchor, anchor + '\n    ' + css_tag)
+              else:
+                  html = html.replace('<link rel="stylesheet" href="./styles.css" />', '<link rel="stylesheet" href="./styles.css" />\n    ' + css_tag)
+
+          js_tag = '<script src="./customer-production.js" defer></script>'
+          if js_tag not in html:
+              anchor = '<script src="./card-effects.js" defer></script>'
+              if anchor in html:
+                  html = html.replace(anchor, anchor + '\n    ' + js_tag)
+              else:
+                  html = html.replace('<script src="./gacha-feedback.js" defer></script>', '<script src="./gacha-feedback.js" defer></script>\n    ' + js_tag)
+
+          customer_path.write_text(html, encoding='utf-8')
+
+          app_path = root / 'app.js'
+          app = app_path.read_text(encoding='utf-8')
+          app = app.replace('DEMO-LOCAL', 'TYC-LOCAL')
+          app = app.replace('菜籃、試玩訂單、點數與收藏', '菜籃、訂單紀錄、菜籽點數與收藏')
+          app = app.replace('本機試玩資料已清除。', '本機顧客資料已清除。')
+          app = app.replace('window.THANK_YOU_CAI_DEMO', 'window.THANK_YOU_CAI_APP_CORE')
+          app_path.write_text(app, encoding='utf-8')
+
+          manifest_path = root / 'manifest.webmanifest'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest.update({
+              'id': './customer.html',
+              'name': '謝謝你，菜！線上訂購',
+              'short_name': '謝謝你，菜！',
+              'description': '查看本週蔬果、菜況、價格與庫存，送出訂單並追蹤同步狀態。',
+              'start_url': './customer.html?source=pwa',
+              'display': 'standalone',
+              'icons': [
+                  {'src': './app-icon.svg', 'sizes': 'any', 'type': 'image/svg+xml', 'purpose': 'any maskable'},
+              ],
+          })
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          status_path = root / 'deployment-status.json'
+          status = json.loads(status_path.read_text(encoding='utf-8')) if status_path.exists() else {}
+          status.update({
+              'customer_release': 'production-v1',
+              'customer_release_ready': True,
+              'customer_release_applied_at': datetime.now(timezone.utc).isoformat(),
+              'customer_features': [
+                  'formal-order-copy',
+                  'customer-profile-memory',
+                  'order-consent',
+                  'connection-status',
+                  'pending-order-resync',
+                  'privacy-notice',
+                  'installable-pwa',
+                  'offline-static-cache',
+              ],
+          })
+          status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          assert 'customer-production.css' in html
+          assert 'customer-production.js' in html
+          assert '切換入口' not in html
+          assert '入口首頁' not in html
+          assert '這份訂單只會存於你的瀏覽器，不會送出' not in html
+          assert 'ORDER CHECKOUT' in html
+          PY
+
+          node --check site/customer-production.js
+          node --check site/service-worker.js
+          node --check site/app.js
+          test -f site/app-icon.svg
+          grep -Fq 'customer-profile-memory' site/deployment-status.json
+          grep -Fq 'orderConsent' site/customer-production.js
+          grep -Fq 'serviceWorker.register' site/customer-production.js
+
+      - name: Commit production customer release
+        working-directory: site
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add customer.html app.js manifest.webmanifest customer-production.js customer-production.css service-worker.js app-icon.svg deployment-status.json
+          if git diff --cached --quiet; then
+            echo "Customer production release is already current."
+            exit 0
+          fi
+          git commit -m "Upgrade customer site to production"
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              exit 0
+            fi
+            git pull --rebase origin gh-pages
+          done
+          exit 1
+
+      - name: Verify public production release
+        run: |
+          set -euo pipefail
+          base="https://xieyaozhong.github.io/Thank-you-cai"
+          verified=false
+          for attempt in $(seq 1 36); do
+            page="$(curl -fsSL --retry 1 --retry-delay 1 "$base/customer.html" || true)"
+            script="$(curl -fsSL --retry 1 --retry-delay 1 "$base/customer-production.js" || true)"
+            status="$(curl -fsSL --retry 1 --retry-delay 1 "$base/deployment-status.json" || true)"
+            if grep -Fq 'customer-production.js' <<<"$page" \
+              && grep -Fq 'ORDER CHECKOUT' <<<"$page" \
+              && grep -Fq 'orderConsent' <<<"$script" \
+              && grep -Fq '"customer_release": "production-v1"' <<<"$status"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = true
+          echo "Verified customer production release: $base/customer.html"
